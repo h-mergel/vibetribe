@@ -1,0 +1,20 @@
+{
+  "name": "@vibetribe/plugin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@elgato/streamdeck": "3.0.2",
+    "@vibetribe/core": "workspace:*",
+    "@vibetribe/hub": "workspace:*",
+    "@vibetribe/protocol": "workspace:*",
+    "@vibetribe/render": "workspace:*"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "esbuild": "^0.28.2"
+  }
+}

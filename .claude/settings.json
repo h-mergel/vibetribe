@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install*)",
+      "Bash(pnpm check*)",
+      "Bash(pnpm test*)",
+      "Bash(pnpm vitest *)",
+      "Bash(pnpm typecheck*)",
+      "Bash(pnpm lint*)",
+      "Bash(pnpm gallery*)",
+      "Bash(pnpm tiles:measure*)",
+      "Bash(pnpm exec biome *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git add *)",
+      "Bash(git rev-parse*)",
+      "Bash(git merge-base*)",
+      "Bash(git branch --show-current)"
+    ]
+  }
+}

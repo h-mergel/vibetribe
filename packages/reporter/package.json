@@ -1,0 +1,13 @@
+{
+  "name": "@vibetribe/reporter",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "@vibetribe/protocol": "workspace:*",
+    "esbuild": "^0.28.2"
+  }
+}

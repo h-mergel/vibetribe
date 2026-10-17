@@ -1,0 +1,118 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "UUID": "dev.h2k.vibetribe",
+  "Name": "VibeTribe",
+  "Version": "0.1.0.0",
+  "Author": "h2k.dev",
+  "Description": "Shows all Claude Code sessions, limits and extra usage on the Stream Deck.",
+  "Icon": "imgs/plugin/marketplace",
+  "Category": "VibeTribe",
+  "CategoryIcon": "imgs/plugin/category",
+  "CodePath": "bin/plugin.js",
+  "SDKVersion": 3,
+  "Nodejs": {
+    "Version": "24"
+  },
+  "Software": {
+    "MinimumVersion": "7.1"
+  },
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Actions": [
+    {
+      "UUID": "dev.h2k.vibetribe.slot",
+      "Name": "Session slot",
+      "Tooltip": "One Claude Code session: state, wait time, origin.",
+      "Icon": "imgs/actions/slot",
+      "PropertyInspectorPath": "ui/slot.html",
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/keys/empty",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "UUID": "dev.h2k.vibetribe.inbox",
+      "Name": "Inbox",
+      "Tooltip": "Most urgent session and the number of waiting sessions.",
+      "Icon": "imgs/actions/inbox",
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/keys/empty",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "UUID": "dev.h2k.vibetribe.limit-5h",
+      "Name": "5h limit",
+      "Tooltip": "Usage in the 5-hour window with pace marker.",
+      "Icon": "imgs/actions/limit-5h",
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/keys/empty",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "UUID": "dev.h2k.vibetribe.limit-week",
+      "Name": "Weekly limit",
+      "Tooltip": "Usage in the 7-day window with pace marker.",
+      "Icon": "imgs/actions/limit-week",
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/keys/empty",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "UUID": "dev.h2k.vibetribe.extra",
+      "Name": "Extra Usage",
+      "Tooltip": "Extra usage credits spent and the monthly limit; press opens the usage settings on claude.ai.",
+      "Icon": "imgs/actions/extra",
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/keys/empty",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "UUID": "dev.h2k.vibetribe.status",
+      "Name": "Status",
+      "Tooltip": "Source health; tap shows all sources for 5 s, hold opens the debug page.",
+      "Icon": "imgs/actions/status",
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/keys/empty",
+          "ShowTitle": false
+        }
+      ]
+    }
+  ]
+}

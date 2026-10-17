@@ -1,0 +1,12 @@
+.worktrees/
+.superpowers/
+node_modules/
+out/
+coverage/
+packages/reporter/dist/
+*.log
+packages/hub/dist/
+packages/plugin/dev.h2k.vibetribe.sdPlugin/bin/
+packages/plugin/dev.h2k.vibetribe.sdPlugin/logs/
+packages/plugin/dev.h2k.vibetribe.sdPlugin/imgs/plugin/marketplace.png
+packages/plugin/dev.h2k.vibetribe.sdPlugin/imgs/plugin/marketplace@2x.png

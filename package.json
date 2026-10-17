@@ -1,0 +1,34 @@
+{
+  "name": "vibetribe",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "biome check .",
+    "gallery": "tsx packages/render/scripts/gallery.ts",
+    "hub:build": "pnpm --filter @vibetribe/hub build",
+    "reporter:build": "pnpm --filter @vibetribe/reporter build",
+    "tiles:measure": "tsx packages/render/scripts/measure.ts",
+    "check": "pnpm lint && pnpm typecheck && pnpm test",
+    "hub:simulate": "tsx packages/hub/scripts/simulate.ts",
+    "plugin:build": "pnpm --filter @vibetribe/plugin build",
+    "plugin:deploy": "pnpm plugin:build && bash packages/plugin/scripts/deploy.sh",
+    "plugin:headless": "tsx packages/plugin/src/headless.ts",
+    "deck:render": "tsx packages/plugin/scripts/render-scenario.ts",
+    "profile:layout": "tsx packages/plugin/scripts/profile-files.ts",
+    "drift": "tsx packages/plugin/scripts/drift.ts",
+    "e2e:live": "tsx packages/plugin/scripts/e2e-live.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@types/node": "^24",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  }
+}

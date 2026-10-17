@@ -1,0 +1,69 @@
+{
+  "data": [
+    {
+      "id": "cse_01SimBlocked",
+      "title": "Partner-Akquise Handoff",
+      "environment_kind": "bridge",
+      "connection_status": "connected",
+      "status": "active",
+      "status_bucket": "blocked",
+      "worker_status": "idle",
+      "unread": true,
+      "external_metadata": { "post_turn_summary": { "status_category": "need_input" } }
+    },
+    {
+      "id": "cse_01SimWorking",
+      "title": "Mac Build",
+      "environment_kind": "bridge",
+      "connection_status": "connected",
+      "status": "active",
+      "status_bucket": "running",
+      "worker_status": "running",
+      "unread": false
+    },
+    {
+      "id": "cse_01SimDone",
+      "title": "Release Notes",
+      "environment_kind": "bridge",
+      "connection_status": "connected",
+      "status": "active",
+      "status_bucket": "completed",
+      "worker_status": "idle",
+      "unread": true,
+      "external_metadata": { "post_turn_summary": { "status_category": "completed" } }
+    },
+    {
+      "id": "cse_01SimRead",
+      "title": "Doku lesen",
+      "environment_kind": "bridge",
+      "connection_status": "connected",
+      "status": "active",
+      "status_bucket": "completed",
+      "worker_status": "idle",
+      "unread": false
+    },
+    {
+      "id": "cse_01SimOffline",
+      "title": "MacBook schläft",
+      "connection_status": "disconnected",
+      "status": "active",
+      "status_bucket": "blocked"
+    },
+    {
+      "id": "cse_01SimArchived",
+      "title": "Alt",
+      "connection_status": "connected",
+      "status": "archived"
+    },
+    {
+      "id": "cse_01SimCloud",
+      "title": "Cloud-Session",
+      "environment_kind": "anthropic_cloud",
+      "connection_status": "connected",
+      "status": "active",
+      "status_bucket": "blocked"
+    },
+    { "id": "not-a-session", "connection_status": "connected", "status": "active" }
+  ],
+  "next_cursor": null
+}

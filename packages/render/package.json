@@ -1,0 +1,14 @@
+{
+  "name": "@vibetribe/render",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./png": "./src/png.ts"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "@vibetribe/core": "workspace:*"
+  }
+}
