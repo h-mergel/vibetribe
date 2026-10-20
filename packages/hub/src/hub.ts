@@ -24,12 +24,16 @@ interface SourceRecord {
   inactive: boolean;
 }
 
+/** Whether this host's Claude Code hooks are set up; the plugin marks it, the hub only shows it. */
+export const SETUP_SOURCE = "setup";
+
 /** Silence after which a source counts as stale, by source kind (the part before the first ':'). */
 const STALE_MS: Record<string, number> = {
   sessions: 60_000,
   usage: 15 * 60_000,
   hooks: Number.POSITIVE_INFINITY,
   ingress: Number.POSITIVE_INFINITY,
+  [SETUP_SOURCE]: Number.POSITIVE_INFINITY,
 };
 
 /** A live job list (Stop, SubagentStop) or the end of the session makes saved jobs obsolete. */
@@ -161,8 +165,11 @@ export class Hub {
       this.#store.apply({ type: "seen", key: key(id), hostKind: "remote", at });
   }
 
+  /** A source that recovers from an error or from being switched off tells the listeners at once. */
   markOk(source: string, at: number): void {
+    const prev = this.#sources.get(source);
     this.#sources.set(source, { lastAt: at, error: null, inactive: false });
+    if (prev?.error || prev?.inactive) this.#notify();
   }
 
   /** The source is switched off (e.g. WSL distro stopped): keep its sessions, show it as missing. */

@@ -11,7 +11,8 @@
     "@vibetribe/core": "workspace:*",
     "@vibetribe/hub": "workspace:*",
     "@vibetribe/protocol": "workspace:*",
-    "@vibetribe/render": "workspace:*"
+    "@vibetribe/render": "workspace:*",
+    "@vibetribe/reporter": "workspace:*"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",

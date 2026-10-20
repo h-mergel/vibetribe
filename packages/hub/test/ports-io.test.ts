@@ -69,7 +69,7 @@ describe("wslReadStat (injected read)", () => {
 
 describe("wslUser never boots the distro", () => {
   it("returns null without exec when the distro is stopped, even with an override", async () => {
-    const exec = vi.fn(async () => "heinrich\n");
+    const exec = vi.fn(async () => "h2k\n");
     const user = wslUser("Ubuntu", async () => false, {
       env: { VIBETRIBE_WSL_USER: "forced" },
       exec,
@@ -90,10 +90,10 @@ describe("wslUser never boots the distro", () => {
 
   it("returns null for a cached user once the distro stops", async () => {
     let running = true;
-    const exec = vi.fn(async () => "heinrich\n");
+    const exec = vi.fn(async () => "h2k\n");
     const user = wslUser("Ubuntu", async () => running, { env: {}, exec });
-    expect(await user()).toBe("heinrich");
-    expect(await user()).toBe("heinrich");
+    expect(await user()).toBe("h2k");
+    expect(await user()).toBe("h2k");
     expect(exec).toHaveBeenCalledTimes(1);
     running = false;
     expect(await user()).toBeNull();
@@ -120,48 +120,48 @@ describe("wslUser never boots the distro", () => {
       env: {},
       exec: async (f, a) => {
         calls.push([f, a]);
-        return "heinrich\r\n";
+        return "h2k\r\n";
       },
     });
-    expect(await user()).toBe("heinrich");
+    expect(await user()).toBe("h2k");
     expect(calls).toEqual([["wsl.exe", ["-d", "Ubuntu", "whoami"]]]);
   });
 });
 
 describe("credentialPaths", () => {
+  const home = "C:\\Users\\H";
   const winPath = "C:\\Users\\H\\.claude\\.credentials.json";
+  const wsl = (running: boolean, user: () => Promise<string | null>) => ({
+    distro: "Ubuntu",
+    isRunning: async () => running,
+    user,
+  });
+
+  it("returns only the Windows path without WSL", async () => {
+    expect(await credentialPaths(home, null)).toEqual([winPath]);
+  });
+
   it("returns only the Windows path while WSL is not running and never asks for the user", async () => {
-    const user = vi.fn(async () => "heinrich");
-    expect(
-      await credentialPaths({
-        home: "C:\\Users\\H",
-        distro: "Ubuntu",
-        isRunning: async () => false,
-        user,
-      }),
-    ).toEqual([winPath]);
+    const user = vi.fn(async () => "h2k");
+    expect(await credentialPaths(home, wsl(false, user))).toEqual([winPath]);
     expect(user).not.toHaveBeenCalled();
   });
 
   it("adds the WSL path when running and the user is known", async () => {
     expect(
-      await credentialPaths({
-        home: "C:\\Users\\H",
-        distro: "Ubuntu",
-        isRunning: async () => true,
-        user: async () => "heinrich",
-      }),
-    ).toEqual([winPath, "\\\\wsl.localhost\\Ubuntu\\home\\heinrich\\.claude\\.credentials.json"]);
+      await credentialPaths(
+        home,
+        wsl(true, async () => "h2k"),
+      ),
+    ).toEqual([winPath, "\\\\wsl.localhost\\Ubuntu\\home\\h2k\\.claude\\.credentials.json"]);
   });
 
   it("returns only the Windows path when running but the user is unknown", async () => {
     expect(
-      await credentialPaths({
-        home: "C:\\Users\\H",
-        distro: "Ubuntu",
-        isRunning: async () => true,
-        user: async () => null,
-      }),
+      await credentialPaths(
+        home,
+        wsl(true, async () => null),
+      ),
     ).toEqual([winPath]);
   });
 });

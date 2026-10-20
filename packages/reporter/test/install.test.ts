@@ -17,15 +17,12 @@ import { install, type SetupEnv, SetupError, uninstall } from "../src/setup/inst
 
 function setupEnv(over: Partial<SetupEnv> = {}): SetupEnv & { lines: string[] } {
   const home = mkdtempSync(join(tmpdir(), "vt-setup-"));
-  const self = join(home, "build", "reporter.mjs");
-  mkdirSync(join(home, "build"));
-  writeFileSync(self, "// reporter bundle");
   const lines: string[] = [];
   return {
     home,
     platform: "win32",
     nodePath: "C:\\Program Files\\nodejs\\node.exe",
-    selfPath: self,
+    reporterSource: "// reporter bundle",
     wsl: false,
     windowsHome: null,
     now: new Date(Date.UTC(2026, 9, 10, 18, 30, 5)),

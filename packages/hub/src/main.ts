@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { createFileLog, dataDirOf, readHubToken, windowsHubConfig } from "./compose";
+import { createFileLog, dataDirOf, readHubToken, windowsHubConfig, wslDistro } from "./compose";
 import { ingressError, startHub } from "./runtime";
 
 const log = createFileLog(join(dataDirOf(), "logs"), "hub");
@@ -17,7 +17,7 @@ if (!token) {
   process.exit(1);
 }
 
-const { config, summary } = await windowsHubConfig({ log, token });
+const { config, summary, wslSource } = await windowsHubConfig({ log, token });
 // plugin and hub.mjs never at the same time: on a taken first port this hub exits instead of
 // moving to a fallback port
 const running = await startHub({ ...config, fallbackPorts: [] });
@@ -30,6 +30,11 @@ if (failure) {
   process.exit(2);
 }
 log(`started: ${summary}`);
+// wsl.exe can take seconds right after login: WSL joins once its distribution is known
+void wslDistro().then((distro) => {
+  log(`wsl: ${distro ?? "none"}`);
+  if (distro) running.addSource(wslSource(distro));
+});
 process.stdout.write(`VibeTribe hub on http://127.0.0.1:${running.port}/debug (Ctrl+C to stop)\n`);
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {

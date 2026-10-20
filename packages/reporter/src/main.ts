@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir, hostname } from "node:os";
 import { hubUrlOf, loadConfig, readToken } from "./config";
 import { detectHost } from "./host";
@@ -102,7 +102,7 @@ async function runSetup(flags: SetupFlags, home: string): Promise<number> {
     platform,
     wsl: isWsl(env),
     nodePath: process.execPath,
-    selfPath: process.argv[1] ?? "",
+    reporterSource: readFileSync(process.argv[1] ?? "", "utf8"),
     now: new Date(),
     log: (line: string) => process.stdout.write(`${line}\n`),
     gitBash: () => detectGitBash({ platform, env, exists: existsSync, exec: execText }),

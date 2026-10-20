@@ -554,5 +554,5 @@ Stand: 2026-10-10. Recherche: Web (Produktseiten, GitHub-READMEs, Quellcode der 
 - Okabe-Ito-Palette: https://siegal.bio.nyu.edu/color-palette/, https://conceptviz.app/blog/okabe-ito-palette-hex-codes-complete-reference
 
 **Lokale Verifikation (nur lesend)**
-- `\\wsl.localhost\Ubuntu\home\heinrich\.claude\sessions\*.json` (611 Dateien; Felder und Statuswerte ausgezählt, `.key`-Dateien nicht gelesen)
+- `\\wsl.localhost\Ubuntu\home\<user>\.claude\sessions\*.json` (611 Dateien; Felder und Statuswerte ausgezählt, `.key`-Dateien nicht gelesen)
 - `%USERPROFILE%\.claude\sessions\*.json`

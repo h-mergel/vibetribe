@@ -14,3 +14,4 @@ Kurzes MADR-Format: Kontext, Entscheidung, Alternativen, Konsequenzen. Eine Date
 | 0008 | Angepinnte Sessions aus dem internen Zustand von Claude Desktop | akzeptiert, ergänzt durch 0009 |
 | 0009 | „Gesehen“ aus den Session-Dateien von Claude Desktop | akzeptiert |
 | 0010 | Drift-Prüfungen und ein Live-Test auf Haiku | akzeptiert |
+| 0011 | Einrichtung aus dem Plugin, Node-Kopie als Hook-Laufzeit, WSL per Klick | akzeptiert |

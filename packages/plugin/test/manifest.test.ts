@@ -1,5 +1,5 @@
 import { type ChildProcess, spawn } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { ACTION_UUIDS, PLUGIN_UUID } from "../src/ids";
 import { PREFER_PINNED_KEY } from "../src/settings";
+import { SETUP_REQUESTS } from "../src/setup/controller";
 import { freePort } from "./helpers";
 
 const pkg = fileURLToPath(new URL("..", import.meta.url));
@@ -19,6 +20,10 @@ const manifest = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8")) as
   CategoryIcon: string;
   Nodejs: { Version: string };
   Version: string;
+  Author: string;
+  URL: string;
+  SupportURL: string;
+  PropertyInspectorPath: string;
   Software: { MinimumVersion: string };
   OS: { Platform: string }[];
   Actions: {
@@ -43,7 +48,10 @@ describe("manifest", () => {
     );
     expect(manifest.Actions).toHaveLength(Object.keys(ACTION_UUIDS).length);
     expect(new Set(manifest.Actions.map((a) => a.UUID)).size).toBe(manifest.Actions.length);
-    expect(manifest.Version).toMatch(/^\d+\.\d+\.\d+\.\d+$/);
+    expect(manifest.Version).toBe("1.0.0.0");
+    expect(manifest.Author).toBe("h2k.dev");
+    expect(manifest.URL).toBe("https://github.com/h-mergel/vibetribe");
+    expect(manifest.SupportURL).toBe("https://github.com/h-mergel/vibetribe/issues");
     expect(manifest.Software.MinimumVersion).toBe("7.1");
     expect(manifest.OS.some((o) => o.Platform === "windows")).toBe(true);
     for (const a of manifest.Actions) {
@@ -59,19 +67,52 @@ describe("manifest", () => {
 });
 
 describe("property inspector", () => {
-  it("only the session slot has one: a local page that saves the preference for pinned sessions", () => {
-    const inspected = manifest.Actions.filter((a) => a.PropertyInspectorPath !== undefined);
-    expect(inspected.map((a) => a.UUID)).toEqual([ACTION_UUIDS.slot]);
-    const html = readFileSync(join(dir, inspected[0]?.PropertyInspectorPath ?? ""), "utf8");
-    expect(html).toContain("Prefer pinned sessions");
-    expect(html).toContain("window.connectElgatoStreamDeckSocket = (port, uuid, registerEvent) =>");
+  const html = readFileSync(join(dir, manifest.PropertyInspectorPath), "utf8");
+
+  it("every action shares one local page; only the session slot shows the preference for pinned sessions", () => {
+    expect(manifest.Actions.every((a) => a.PropertyInspectorPath === undefined)).toBe(true);
+    expect(html).toContain(
+      "window.connectElgatoStreamDeckSocket = (port, uuid, registerEvent, _info, actionInfo) =>",
+    );
+    expect(html).toContain(`const SLOT = "${ACTION_UUIDS.slot}";`);
+    expect(html).toContain('$("pinned").hidden = action !== SLOT;');
     expect(html).toContain(`const KEY = "${PREFER_PINNED_KEY}";`);
     // unticked only when saved as false: the same default as the plugin
     expect(html).toContain("box.checked = settings[KEY] !== false;");
     expect(html).toContain('event: "setGlobalSettings"');
-    // works offline: nothing loads from elsewhere, the only URL is the Stream Deck socket
+  });
+
+  it("asks the plugin only for the setup steps it knows and shows what it answers", () => {
+    const asked = [...html.matchAll(/ask\("([a-z-]+)"\)/g)].map((m) => m[1]);
+    expect(new Set(asked)).toEqual(new Set(SETUP_REQUESTS));
+    expect(html).toContain('if (data.event === "sendToPropertyInspector") show(data.payload);');
+    expect(html).not.toMatch(/donat|sponsor|copyright|©|>Save</i);
+  });
+
+  it("works offline: nothing loads from elsewhere; the only links are the socket and the setup help", () => {
     expect(html).not.toMatch(/\b(src|href)\s*=/);
-    expect(html.match(/\w+:\/\/[\w.]+/g)).toEqual(["ws://127.0.0.1"]);
+    expect(html.match(/\w+:\/\/[\w./#-]+/g)).toEqual([
+      "https://github.com/h-mergel/vibetribe#install-from-the-marketplace",
+      "ws://127.0.0.1",
+    ]);
+  });
+});
+
+describe("DRM", () => {
+  /** every source file of the plugin process (paths relative to the package) */
+  const sources = (sub: string): string[] =>
+    readdirSync(join(pkg, sub), { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? sources(join(sub, e.name)) : [join(sub, e.name)],
+    );
+
+  it("the plugin reads no manifest and nothing next to itself, so its files may stay encrypted", () => {
+    // headless mode never ships in the package
+    const shipped = sources("src").filter((f) => !f.endsWith("headless.ts"));
+    expect(shipped.length).toBeGreaterThan(20);
+    for (const file of shipped) {
+      const code = readFileSync(join(pkg, file), "utf8");
+      expect(code, file).not.toMatch(/manifest\.json|import\.meta|__dirname|process\.cwd\(\)/);
+    }
   });
 });
 
@@ -99,6 +140,20 @@ describe("bundle", () => {
     );
     expect(js).not.toContain("resvg");
     expect(js).not.toMatch(/from\s+["']@vibetribe/);
+    // the reporter rides along as text, written out on setup
+    expect(js).toContain("usage: reporter.mjs hook | statusline | setup");
+    // DRM: the only manifest read is the SDK's own (it answers null for an encrypted manifest),
+    // and nothing writes next to the bundle
+    const sdkReader = [
+      'join(process.cwd(), "manifest.json")',
+      "Failed to read manifest.json as the file does not exist.",
+    ];
+    expect(sdkReader.reduce((rest, text) => rest.replace(text, ""), js)).not.toContain(
+      "manifest.json",
+    );
+    expect(js).not.toMatch(
+      /(writeFile|appendFile|mkdir|copyFile|rename)\w*\([^)]*(__dirname|import\.meta)/,
+    );
     expect(JSON.parse(readFileSync(join(dir, "bin", "package.json"), "utf8"))).toEqual({
       type: "module",
     });
@@ -170,7 +225,7 @@ describe("bundle at runtime", () => {
           HOME: root,
           USERPROFILE: root,
           VIBETRIBE_PORT: String(hubPort),
-          VIBETRIBE_WSL_DISTRO: "nonexistent",
+          VIBETRIBE_WSL_DISTRO: "none",
         },
       },
     );

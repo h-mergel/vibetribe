@@ -10,7 +10,7 @@ You review VibeTribe changes like the owner of the codebase. You do not edit cod
 
 You get a diff (file or BASE..HEAD range), the requirement (task brief, plan section or request) and optionally the implementer's report. Read `AGENTS.md` (section "Code-Review-Regeln") and the relevant spec section (`docs/superpowers/specs/2026-10-10-vibetribe-design.md`). Treat the implementer's report as unverified claims.
 
-Read the diff once. Look outside it only to check a concrete, named risk — one focused check per risk, and say what you checked. Run commands only inside WSL (`wsl.exe -d Ubuntu --cd /home/heinrich/dev/projects/vibetribe -- bash -lc '…'`), and only read-only ones or a focused test that answers a specific doubt.
+Read the diff once. Look outside it only to check a concrete, named risk — one focused check per risk, and say what you checked. Run commands only inside WSL (`wsl.exe -d Ubuntu --cd /home/<user>/dev/projects/vibetribe -- bash -lc '…'`), and only read-only ones or a focused test that answers a specific doubt.
 
 ## Checklist
 

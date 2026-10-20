@@ -2,7 +2,7 @@
 
 **Frage:** Verträgt `GET /v1/code/sessions` eine Abfrage alle 20 s mit dem OAuth-Token der Anmeldedatei, oder antwortet sie wie der Usage-Endpunkt mit 429? Welche Werte nehmen `environment_kind`, `worker_status` und die übrigen Status-Felder an, und ändert sich `last_event_at` ruhender Sessions?
 
-**Methode:** `probes/remote-sessions/rate.mjs` (WSL-Node), Lauf am 2026-10-13, 15 Abfragen im Abstand von 20 s mit Abbruch beim ersten 429, Ausgabe ohne Titel/IDs/Tokens. Token aus `C:\Users\Heinrich\.claude\.credentials.json`.
+**Methode:** `probes/remote-sessions/rate.mjs` (WSL-Node), Lauf am 2026-10-13, 15 Abfragen im Abstand von 20 s mit Abbruch beim ersten 429, Ausgabe ohne Titel/IDs/Tokens. Token aus `C:\Users\<user>\.claude\.credentials.json`.
 
 **Ergebnis:** 15 Abfragen, Status 200 (15x), Latenz 227–426 ms, Rate-Limit-Header keine. Kein 429. Je Abfrage 25 Sessions (17 `connected`).
 

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { parseCimRows, parseRunningDistros } from "../src/sessions/ports";
+import {
+  decodeWslOutput,
+  parseCimRows,
+  parseDefaultDistro,
+  parseRunningDistros,
+  wslDefaultDistro,
+} from "../src/sessions/ports";
 
 describe("parseCimRows (PowerShell 5.1 ConvertTo-Json)", () => {
   it("parses an array, a single object and empty output", () => {
@@ -34,5 +40,48 @@ describe("parseRunningDistros (wsl -l --running --quiet, decoded)", () => {
     ]);
     expect(parseRunningDistros("﻿Ubuntu\0\r\n")).toEqual(["Ubuntu"]);
     expect(parseRunningDistros("")).toEqual([]);
+  });
+});
+
+describe("default WSL distribution (wsl -l -v, decoded)", () => {
+  const LIST =
+    "  NAME              STATE           VERSION\r\n* Ubuntu-24.04      Stopped         2\r\n  docker-desktop    Running         2\r\n";
+
+  it("takes the row marked with a star, in any language", () => {
+    expect(parseDefaultDistro(LIST)).toBe("Ubuntu-24.04");
+    expect(parseDefaultDistro(LIST.replace("STATE", "ZUSTAND").replace("Stopped", "Beendet"))).toBe(
+      "Ubuntu-24.04",
+    );
+  });
+
+  it("is null without a marked row: no distribution or a WSL that is not installed", () => {
+    expect(
+      parseDefaultDistro("  NAME   STATE   VERSION\r\n  docker-desktop  Running  2\r\n"),
+    ).toBeNull();
+    expect(
+      parseDefaultDistro("Windows Subsystem for Linux has no installed distributions.\r\n"),
+    ).toBeNull();
+    expect(parseDefaultDistro("")).toBeNull();
+  });
+
+  it("takes Docker Desktop's distribution as the default for none", () => {
+    expect(
+      parseDefaultDistro(
+        LIST.replace("* Ubuntu-24.04", "  Ubuntu-24.04").replace(
+          "  docker-desktop",
+          "* docker-desktop",
+        ),
+      ),
+    ).toBeNull();
+  });
+
+  it("reads wsl.exe in UTF-16LE and, with WSL_UTF8=1, in UTF-8", () => {
+    expect(parseDefaultDistro(decodeWslOutput(Buffer.from(LIST, "utf16le")))).toBe("Ubuntu-24.04");
+    expect(parseDefaultDistro(decodeWslOutput(Buffer.from(LIST, "utf8")))).toBe("Ubuntu-24.04");
+  });
+
+  it("wslDefaultDistro answers null when wsl.exe fails", async () => {
+    expect(await wslDefaultDistro(async () => LIST)).toBe("Ubuntu-24.04");
+    expect(await wslDefaultDistro(() => Promise.reject(new Error("ENOENT")))).toBeNull();
   });
 });

@@ -1,4 +1,4 @@
-import { INGRESS_TOKEN_MESSAGE, ingressPortError } from "@vibetribe/hub";
+import { INGRESS_TOKEN_MESSAGE, ingressPortError, SETUP_SOURCE } from "@vibetribe/hub";
 import { describe, expect, it } from "vitest";
 import type { KeyPlacement } from "../src/deck/keys";
 import { inboxView, statusAlert, statusTile, type TileContext, tileFor } from "../src/deck/tiles";
@@ -107,6 +107,21 @@ describe("statusTile", () => {
     expect(statusAlert(withError(`${PORT_ERROR}; ${INGRESS_TOKEN_MESSAGE}`))).toBe("Port in use");
     expect(statusAlert(withError("EACCES"))).toBe("Error");
     expect(statusAlert(hubState())).toBeNull();
+  });
+
+  it("asks for setup while the hooks are not set up, after any ingress problem", () => {
+    const setup = {
+      health: "missing",
+      lastAt: null,
+      error: "Claude Code hooks not set up",
+    } as const;
+    const ingress = { health: "missing", lastAt: null, error: PORT_ERROR } as const;
+    expect(statusAlert(hubState({ sources: { [SETUP_SOURCE]: setup } }))).toBe("Setup");
+    expect(statusAlert(hubState({ sources: { [SETUP_SOURCE]: setup, ingress } }))).toBe(
+      "Port in use",
+    );
+    expect(statusAlert(hubState({ sources: { [SETUP_SOURCE]: { ...ok, lastAt: 0 } } }))).toBeNull();
+    expect(statusTile(hubState({ sources: { [SETUP_SOURCE]: setup } })).alert).toBe("Setup");
   });
 });
 

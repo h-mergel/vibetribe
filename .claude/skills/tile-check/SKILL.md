@@ -24,7 +24,7 @@ Character limits do not guarantee width. Every change on a tile is checked again
    ```bash
    pnpm gallery
    ```
-   Open the changed tiles with the Read tool, e.g. `\\wsl.localhost\Ubuntu\home\heinrich\dev\projects\vibetribe\out\gallery\comfortable\slot-needs_permission.png` (and the same under `compact\`). Check: text readable, inside the frame, nothing overlaps, colors match the state. `out/gallery/index.html` shows both variants at 144 px and at the device size 72 px; compare with `docs/design/handoff-2026-10-13/reference/png/`.
+   Open the changed tiles with the Read tool, e.g. `\\wsl.localhost\Ubuntu\home\<user>\dev\projects\vibetribe\out\gallery\comfortable\slot-needs_permission.png` (and the same under `compact\`). Check: text readable, inside the frame, nothing overlaps, colors match the state. `out/gallery/index.html` shows both variants at 144 px and at the device size 72 px; compare with `docs/design/handoff-2026-10-13/reference/png/`.
 5. **Report** what you measured and what you saw in the PNGs (both variants).
 
 ## Limits

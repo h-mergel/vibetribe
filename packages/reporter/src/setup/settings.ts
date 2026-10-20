@@ -116,6 +116,24 @@ export function applyHooks(s: Settings, cmd: ReporterCommand): Settings {
   return { ...s, hooks };
 }
 
+/**
+ * The commands (node paths) of our hook entries; null unless every HOOK_EVENTS entry and the
+ * statusline are ours.
+ */
+export function ourHookCommands(s: Settings): string[] | null {
+  if (!isOurStatusline(s.statusLine) || !isObj(s.hooks)) return null;
+  const commands = new Set<string>();
+  for (const event of HOOK_EVENTS) {
+    const groups = s.hooks[event];
+    const entry = Array.isArray(groups)
+      ? groups.flatMap((g) => (hasOurs(g) ? g.hooks.filter(isOurHookEntry) : []))[0]
+      : undefined;
+    if (!isObj(entry) || typeof entry.command !== "string") return null;
+    commands.add(entry.command);
+  }
+  return [...commands];
+}
+
 /** Removes only our entries. Returns `s` itself when there is nothing of ours to remove. */
 export function removeHooks(s: Settings): Settings {
   if (!isObj(s.hooks)) return s;

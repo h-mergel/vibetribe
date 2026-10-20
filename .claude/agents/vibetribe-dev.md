@@ -9,7 +9,7 @@ You implement one task in the VibeTribe repo. Read `AGENTS.md` first — it hold
 ## Before you start
 
 - Read the task brief or request completely. If anything is unclear, stop and ask (report NEEDS_CONTEXT) instead of guessing.
-- The repo lives in WSL. Run every shell command inside WSL (`wsl.exe -d Ubuntu --cd /home/heinrich/dev/projects/vibetribe -- bash -lc '…'`); edit files via `\\wsl.localhost\Ubuntu\home\heinrich\dev\projects\vibetribe\…`.
+- The repo lives in WSL. Run every shell command inside WSL (`wsl.exe -d Ubuntu --cd /home/<user>/dev/projects/vibetribe -- bash -lc '…'`); edit files via `\\wsl.localhost\Ubuntu\home\<user>\dev\projects\vibetribe\…`.
 
 ## How you work
 

@@ -99,7 +99,7 @@ describe("WindowsSessionSource", () => {
 });
 
 describe("WslSessionSource", () => {
-  const dir = "\\\\wsl.localhost\\Ubuntu\\home\\heinrich\\.claude\\sessions";
+  const dir = "\\\\wsl.localhost\\Ubuntu\\home\\h2k\\.claude\\sessions";
   const stat = (start: string) => `1 (claude) S 1 1 1 0 -1 0 0 0 0 0 0 0 0 0 20 0 1 0 ${start} 0 0`;
 
   function ports(over: Partial<WslSourcePorts> = {}): WslSourcePorts & { statCalls: number[] } {
@@ -114,7 +114,7 @@ describe("WslSessionSource", () => {
         [`${dir}\\999.json`]: sessionJson(999, "dead", "1"),
       }),
       isRunning: async () => true,
-      user: async () => "heinrich",
+      user: async () => "h2k",
       listProc: async () => ["1", "713", "497651", "self", "cpuinfo"],
       readStat: async (pid) => {
         statCalls.push(pid);
@@ -130,7 +130,7 @@ describe("WslSessionSource", () => {
       isRunning: async () => false,
       user: async () => {
         userCalls++;
-        return "heinrich";
+        return "h2k";
       },
     });
     expect(await new WslSessionSource(p).scan(1)).toEqual({ inactive: "distro not running" });
@@ -378,7 +378,7 @@ describe("WindowsSessionSource carry-forward and caches", () => {
 });
 
 describe("WslSessionSource carry-forward", () => {
-  const dir = "\\\\wsl.localhost\\Ubuntu\\home\\heinrich\\.claude\\sessions";
+  const dir = "\\\\wsl.localhost\\Ubuntu\\home\\h2k\\.claude\\sessions";
   const stat = (start: string) => `1 (claude) S 1 1 1 0 -1 0 0 0 0 0 0 0 0 0 20 0 1 0 ${start} 0 0`;
 
   function ports(over: Partial<WslSourcePorts> = {}): WslSourcePorts {
@@ -386,7 +386,7 @@ describe("WslSessionSource carry-forward", () => {
       distro: "Ubuntu",
       fs: fakeFs({ [`${dir}\\497651.json`]: sessionJson(497651, "live", "921344") }),
       isRunning: async () => true,
-      user: async () => "heinrich",
+      user: async () => "h2k",
       listProc: async () => ["497651"],
       readStat: async () => stat("921344"),
       ...over,

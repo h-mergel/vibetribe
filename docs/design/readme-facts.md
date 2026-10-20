@@ -7,13 +7,13 @@ Stand: main `deb4529`. Quelle der Wahrheit ist der Code; Abweichungen der Doku s
 - VibeTribe ist ein Stream-Deck-Plugin (Elgato MK.2, 15 Tasten), das alle Claude-Code-Sessions eines Entwicklers auf einem Deck zeigt: lokal unter Windows, in WSL, im Code-Tab von Claude Desktop und Remote-Control-Sessions auf anderen Rechnern. Dazu 5h-Limit, Wochenlimit und Extra Usage.
 - Kernwert: **Wer braucht mich, seit wann, ein Druck springt hin.** Jede Kachel zeigt Zustand, Wartezeit und Herkunft; ein Tastendruck öffnet die Session in Claude Desktop.
 - Das Plugin ist selbst die Zentrale (Hub im Plugin-Prozess, `127.0.0.1`, Port 43710 oder ein Ersatzport); kein separater Dienst nötig.
-- Status: in Entwicklung, läuft auf dem Gerät des Autors; Autor/Namespace `h2k.dev`, Plugin-UUID `dev.h2k.vibetribe`, Version `0.1.0.0`.
+- Status: in Entwicklung, läuft auf dem Gerät des Autors; Autor/Namespace `h2k.dev`, Plugin-UUID `dev.h2k.vibetribe`, Version `1.0.0.0` (erste Marketplace-Fassung, kostenlos).
 
 ## 2. Funktionen für Nutzer
 
 **Quellen**
 - Windows: Session-Dateien unter `%USERPROFILE%\.claude\sessions` plus Hooks. Abzeichen `WIN`.
-- WSL: Session-Dateien über `\\wsl.localhost\<Distro>` (Standard `Ubuntu`) plus Hooks aus WSL. Abzeichen `WSL`.
+- WSL: Session-Dateien über `\\wsl.localhost\<Distro>` (die Standard-Distribution aus `wsl.exe -l -v`, sonst `VIBETRIBE_WSL_DISTRO`; ohne WSL keine WSL-Quelle) plus Hooks aus WSL. Abzeichen `WSL`.
 - Claude Desktop: Sessions aus dem Code-Tab erscheinen je nach Host als `WIN` oder `WSL` (das Abzeichen sagt, wo die Session läuft, nicht wie sie gestartet wurde).
 - Remote Control auf anderen Rechnern: Abfrage der Session-Liste des Kontos alle 20 s (nur `environment_kind = bridge`), Abzeichen `REM`. Gröber als Hooks: kein Tool-Name, keine Unterscheidung Freigabe/Frage, keine Hintergrund-Jobs, bis 20 s Verzögerung.
 - Remote-Session ohne Signal: nach 90 s `Offline`, nach 210 s entfernt.
@@ -43,7 +43,7 @@ Stand: main `deb4529`. Quelle der Wahrheit ist der Code; Abweichungen der Doku s
 - Extra-Taste (kurz): öffnet `https://claude.ai/settings/usage` im Browser; lang: nichts.
 
 **Status-Kachel**
-- Ruhig `Sources ok`, sonst nur Störungen. Quellen: `WIN`, `WSL`, `REM`, `LIM`; Zustände ok/stale/down/off. Alarme: `Port in use`, `No token`, `Error`.
+- Ruhig `Sources ok`, sonst nur Störungen. Quellen: `WIN`, `WSL`, `REM`, `LIM`; Zustände ok/stale/down/off. Alarme: `Port in use`, `Setup` (Hooks fehlen oder sind veraltet), `No token` (Token-Datei fehlt), `Error`.
 - Tippen: alle vier Quellen 5 s lang. Halten: öffnet die Debug-Seite `http://127.0.0.1:<port>/debug` im Browser.
 
 **Hintergrund-Jobs**
@@ -70,14 +70,23 @@ Page 2  | Slot 5 | Slot 6 | Slot 7 | Slot 8
 
 ## 4. Voraussetzungen
 
-- Windows 10 oder neuer laut Manifest (getestet unter Windows 11); optional WSL2 (Ubuntu) für WSL-Sessions. Linux/macOS: nicht unterstützt (`setup` bricht außerhalb Windows/WSL ab).
+- Windows 10 oder neuer laut Manifest (getestet unter Windows 11); optional WSL2 (beliebige Distribution, Node.js ≥ 20 im Login-PATH) für WSL-Sessions. Linux/macOS: nicht unterstützt (`setup` bricht außerhalb Windows/WSL ab).
 - Stream-Deck-App mindestens 7.1 (Manifest, SDK v3, `@elgato/streamdeck` 3.0.2); getestet mit 7.6. Gerät: MK.2 (Profil-Werkzeug erkennt nur Modell `20GBL9901`).
-- Node.js ≥ 24 (`engines`, Plugin-Runtime `Nodejs.Version 24`); Reporter wird für `node24` gebaut.
+- Node.js ≥ 24 (`engines`, Plugin-Runtime `Nodejs.Version 24`); Reporter wird für `node20` gebaut.
 - Claude Code und/oder Claude Desktop mit Anmeldung (OAuth-Anmeldedatei für Limits und Remote-Liste); `claude.exe` im PATH (`where.exe claude`) für den Token-Refresh.
 - pnpm 10.33.0 (`packageManager`).
 - Für die Installation aus WSL: Windows-Interop (`cmd.exe`, `wslpath`, `/mnt/c`).
 
-## 5. Installation aus dem Quellcode
+## 5. Installation aus dem Marketplace
+
+1. In der Stream-Deck-App im Marketplace „VibeTribe“ installieren (kostenlos).
+2. Aktionen der Kategorie „VibeTribe“ auf Tasten ziehen.
+3. Eine VibeTribe-Taste in der App anklicken, unter „Claude Code hooks“ **Set up hooks** wählen. Bis dahin zeigt die Status-Taste `Setup`. Vorher ändert das Plugin nichts an `~/.claude/settings.json`.
+4. Sessions in WSL: **Set up in WSL** an derselben Stelle (braucht Node.js 20 oder neuer im Login-`PATH` von WSL).
+
+Die Einrichtung schreibt Hooks und Statusline-Weiche in `~/.claude/settings.json` (Backup, atomar, idempotent) sowie `reporter.mjs` und eine Kopie von Stream Decks Node.js (`node-<version>.exe`, etwa 90 MB) nach `%USERPROFILE%\.vibetribe`. „Remove hooks“ lässt beide liegen. Nach einem Plugin-Update mit neuem Reporter zeigt die Status-Taste wieder `Setup`: **Update hooks**.
+
+## 5b. Installation aus dem Quellcode
 
 Alle Befehle in WSL im Repo (Repo liegt in WSL; kein pnpm/node unter Windows im Repo). Jeder Schritt verändert den echten Rechner: nur bewusst ausführen.
 
@@ -94,7 +103,7 @@ Alle Befehle in WSL im Repo (Repo liegt in WSL; kein pnpm/node unter Windows im 
    - Sicherheit: ohne `--write` nur Vorschau; fremde Tasten bleiben Byte für Byte; Abbruch statt Datenverlust; `--write` verweigert, solange `StreamDeck.exe` läuft; sichert beide Manifeste als `manifest.json.vibetribe-<zeit>.bak`; schreibt atomar (Seite 2 vor Seite 1), liest zurück und stellt bei Fehler wieder her. `--i-checked-streamdeck-is-closed` überstimmt nur „kann nicht prüfen“. Vorher `%APPDATA%\Elgato\StreamDeck\ProfilesV3` sichern. Profilordner heißt `ProfilesV3`.
 
 **Deinstallieren / Rückgängig**
-- Hooks: `node …\reporter.mjs setup --uninstall` (je Host) entfernt nur eigene Einträge und stellt die vorherige Statusline wieder her; Backup der `settings.json` wird angelegt.
+- Hooks: **Remove hooks** bzw. **Remove from WSL** in den Einstellungen einer VibeTribe-Taste, oder `node …\reporter.mjs setup --uninstall` (je Host; ohne Plugin in PowerShell `& (Get-Item "$env:USERPROFILE\.vibetribe\node-*.exe")[0] "$env:USERPROFILE\.vibetribe\reporter.mjs" setup --uninstall`) entfernt nur eigene Einträge und stellt die vorherige Statusline wieder her; Backup der `settings.json` wird angelegt.
 - Plugin: kein Uninstall-Skript. Ordner `%APPDATA%\Elgato\StreamDeck\Plugins\dev.h2k.vibetribe.sdPlugin` bei beendeter App von Hand löschen; optional `%USERPROFILE%\.vibetribe` und `%APPDATA%\vibetribe`.
 - Rollback: `deploy.sh` stellt bei Fehler im Austausch die vorige Version wieder her (bei Erstinstallation wird der Ordner entfernt); ein Versionsrücksprung nach erfolgreichem Deploy ist nicht vorgesehen (neu bauen und deployen).
 - Profil-Layout: aus den `.bak`-Dateien bzw. der eigenen Sicherung.
@@ -105,7 +114,7 @@ Wirken nur nach vollständigem Neustart der Stream-Deck-App (unter Windows z. B.
 - `VIBETRIBE_VARIANT`: `comfortable` (Standard) oder `compact`; anderes fällt auf `comfortable`.
 - `VIBETRIBE_MAX_FRAMES`: Bilder pro Sekunde für das ganze Plugin, ganze Zahl 1–100, Standard 10.
 - `VIBETRIBE_PORT`: erster Port der Zentrale, 1–65535, Standard 43710 (ungültig: Standard plus Warnung im Log). Ist er belegt, nimmt das Plugin den ersten freien aus 37710, 31710, 25710 und schreibt ihn nach `%USERPROFILE%\.vibetribe\port`. Der Reporter liest diese Datei (in WSL über `/mnt/c`); ein `hubUrl` in `~/.vibetribe/config.json` hat Vorrang (`http://127.0.0.1:43710` gilt nicht als Vorgabe).
-- `VIBETRIBE_WSL_DISTRO`: WSL-Distribution, Standard `Ubuntu`. `VIBETRIBE_WSL_USER`: WSL-Benutzer, sonst automatisch ermittelt.
+- `VIBETRIBE_WSL_DISTRO`: WSL-Distribution, Standard: die Standard-Distribution von WSL; `none` schaltet WSL ab. `VIBETRIBE_WSL_USER`: WSL-Benutzer, sonst automatisch ermittelt.
 - Nur Entwicklung/Headless: `VIBETRIBE_TOKEN` (Standard zufällig), `VIBETRIBE_REMOTE_FIXTURE` (JSON mit Remote-Sessions, z. B. `packages/hub/fixtures/remote/sessions.json`). Headless-Port Standard 43799; 43710 und die Ersatzports 37710/31710/25710 werden verweigert.
 - Nur Deploy-Skript (Tests): `VIBETRIBE_DEPLOY_APPDATA_WIN`, `VIBETRIBE_DEPLOY_SRC`.
 - Dateien: Token `%USERPROFILE%\.vibetribe\token`; Logs `%APPDATA%\vibetribe\logs\{plugin,hub}.log` (rotierend, 1 MB × 5, nie Tokens); Port-Datei `%USERPROFILE%\.vibetribe\port` (nur die Zahl, bleibt beim Beenden liegen); Zustand `%APPDATA%\vibetribe\{background.json,usage-cache.json}`.
@@ -136,7 +145,7 @@ Wirken nur nach vollständigem Neustart der Stream-Deck-App (unter Windows z. B.
 - Sprung geht über Windows und Claude Desktop und braucht etwa 2 s (Angabe des Auftraggebers; im Repo nicht belegt). `opened` heißt nur „Windows hat den Link angenommen“; die Vordergrund-Sperre kann Desktop nur in der Taskleiste blinken lassen; ein Sprung, der nicht startet, steht als `(failed)` im Log.
 - Nur Windows (mit optionalem WSL). Mac-Agent und Tailscale sind nicht implementiert; Remote-Sessions kommen über die Konto-Liste.
 - Zwei undokumentierte Schnittstellen (`/api/oauth/usage`, `/v1/code/sessions`): Ausfälle zeigen `As of HH:MM`, `Sign in` bzw. `Offline`, nie als Fehler; können jederzeit brechen.
-- Noch kein Release-Paket und kein Marketplace-Eintrag; Installation nur aus dem Quellcode, Deploy per Kopie (SDK v3, spätere Verpackung über `streamdeck pack` vorgesehen).
+- Paket für den Marketplace über `pnpm plugin:pack` (`dist/dev.h2k.vibetribe.streamDeckPlugin`, dazu die Bilder in `dist/marketplace/`); aus dem Quellcode weiter per Kopie (`pnpm plugin:deploy`). Der Marketplace-Eintrag erscheint erst nach der Prüfung durch Elgato.
 - Hooks lassen Ablehnen/Stoppen in Claude Desktop nicht erkennen; das Ende dieser Zustände kommt über Session-Datei (Polling alle 1–2 s bei wartenden/laufenden Sessions, sonst 5 s).
 - `Done` geht bei einem Plugin-Neustart verloren; Hintergrund-Jobs bleiben erhalten.
 - Remote: kein Tool-Name, keine Freigabe-/Frage-Unterscheidung, bis 20 s Verzögerung.
@@ -151,8 +160,8 @@ Wirken nur nach vollständigem Neustart der Stream-Deck-App (unter Windows z. B.
 - Headless: `pnpm plugin:headless` (Zentrale + Deck ohne Stream Deck, Port 43799; Tasten über stdin `press mk2:1:0` / `long mk2:1:0`; Spiegel unter `/debug/keys`). `pnpm hub:simulate <szenario.jsonl>` spielt Szenarien aus `packages/hub/fixtures/scenarios/` ein. `pnpm deck:render <szenario> --after <ms> [--variant …]` rendert einen Zustand (HTML nach `out/deck/`).
 - Debug-Seiten: `http://127.0.0.1:<port>/debug`, `/debug/state.json`, `/debug/keys`, `/debug/keys.json`.
 - Drift: `pnpm drift` prüft nur lesend, ob die undokumentierten Schnittstellen (Desktop-Dateien, Session-Dateien, Session-Liste, Usage, Ports, Port-Datei) noch passen, eine Zeile je Annahme, Exit 1 bei Drift. `pnpm e2e:live` macht auf Wunsch einen echten Haiku-Durchgang gegen die laufende Zentrale (kostet Tokens).
-- Architektur: Ports & Adapters mit reiner Domäne (`packages/core`: kein I/O, Zeit als Parameter); Abhängigkeiten zeigen nur nach innen `plugin → render → core`, Reporter eigenständig, Event-Hülle und Port-Datei (`packages/protocol`) sind die einzigen gemeinsamen Verträge; Adapter in `hub`/`plugin`, eine Composition Root.
-- Pakete: `core`, `render`, `protocol`, `reporter`, `hub`, `plugin`. Entscheidungen: `docs/adr/0001`–`0010`; Spec `docs/superpowers/specs/2026-10-10-vibetribe-design.md`; TDD, Conventional Commits.
+- Architektur: Ports & Adapters mit reiner Domäne (`packages/core`: kein I/O, Zeit als Parameter); Abhängigkeiten zeigen nur nach innen `plugin → render → core` (dazu `plugin → reporter`, nur `@vibetribe/reporter/setup`), Reporter sonst eigenständig, Event-Hülle und Port-Datei (`packages/protocol`) sind die einzigen gemeinsamen Verträge; Adapter in `hub`/`plugin`, eine Composition Root.
+- Pakete: `core`, `render`, `protocol`, `reporter`, `hub`, `plugin`. Entscheidungen: `docs/adr/0001`–`0011`; Spec `docs/superpowers/specs/2026-10-10-vibetribe-design.md`; TDD, Conventional Commits.
 
 ## 10. Bildmaterial
 
@@ -166,7 +175,7 @@ Wirken nur nach vollständigem Neustart der Stream-Deck-App (unter Windows z. B.
 
 - Spec/AGENTS/README nennen „Mac“ als Quelle; im Code heißt es `REM` (Konto-Liste, ADR 0006).
 - HANDOFF nennt für die Status-Taste „Setup/Diagnose“; Code öffnet nur `/debug`.
-- HANDOFF-Belegung (8 Slots, Extra auf Zeile 2, „Page 2“) ist Designvorschlag; Code-Standard `defaultMk2Layout` (Headless) hat Inbox/5h/Week/Extra/Status oben und 10 Slots; echte Geräte-Belegung (Plan-6-Followups) hat Apps|5h|Week|Inbox|Status, 11 VibeTribe-Tasten. Plugin passt sich den platzierten Tasten an.
+- HANDOFF-Belegung (8 Slots, Extra auf Zeile 2, „Page 2“) ist Designvorschlag; Code-Standard `defaultMk2Layout` (Headless) hat Inbox/5h/Week/Extra/Status oben und 10 Slots; echte Geräte-Belegung hat Apps|5h|Week|Inbox|Status, 11 VibeTribe-Tasten. Plugin passt sich den platzierten Tasten an.
 - Manifest erlaubt Windows 10, Spec nennt Windows 11; Stream Deck mindestens 7.1 laut Manifest, Spec nennt 7.6.
 - „~2 s Sprungverzögerung“ steht in keiner Doku; belegt sind nur 1 s `Open…` und 2 s `No link`.
 - Spec 4.2 nennt `statusUpdatedAt`-Vergleich; ADR 0004 und Code nutzen beobachtete Dateiübergänge.

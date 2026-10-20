@@ -18,11 +18,12 @@ import {
   credentialPaths,
   isProcessAlive,
   nodeDirPort,
+  type WslAccess,
   windowsCreationTimes,
-  wslIsRunning,
+  wslAccess,
+  wslDefaultDistro,
   wslListProc,
   wslReadStat,
-  wslUser,
 } from "./sessions/ports";
 import { type SessionSource, WindowsSessionSource, WslSessionSource } from "./sessions/sources";
 import { claudeRunner, findClaudeExe, parseClaudeVersion, runClaudeVersion } from "./usage/cli";
@@ -69,6 +70,19 @@ export const desktopDirs = (env: NodeJS.ProcessEnv, home: string): string[] => {
     join(roamingDirOf(env, home), "Claude"),
   ];
 };
+
+/**
+ * VIBETRIBE_WSL_DISTRO (`none` switches WSL off without asking wsl.exe), else WSL's default
+ * distribution; null without WSL.
+ */
+export async function wslDistro(
+  env: NodeJS.ProcessEnv = process.env,
+  findDefault: () => Promise<string | null> = () => wslDefaultDistro(),
+): Promise<string | null> {
+  const wanted = env.VIBETRIBE_WSL_DISTRO;
+  if (wanted === "none") return null;
+  return wanted || findDefault();
+}
 
 /**
  * Plain rotating log: <name>.log, <name>.1.log … <name>.4.log, 1 MB each. Never logs tokens.
@@ -140,6 +154,11 @@ export interface WindowsHubConfig {
   config: HubConfig;
   /** one line for the start log: sources, claude.exe (the port is known only once bound) */
   summary: string;
+  /**
+   * The session source of a WSL distribution found after the start (`wslDistro` can take 15 s);
+   * from then on its credentials count too. Call once, then hand it to `RunningHub.addSource`.
+   */
+  wslSource(distro: string): SessionSource;
 }
 
 /**
@@ -151,14 +170,12 @@ export interface WindowsHubConfig {
 export async function windowsHubConfig(o: WindowsHubOptions): Promise<WindowsHubConfig> {
   const env = o.env ?? process.env;
   const home = o.home ?? homedir();
-  const distro = env.VIBETRIBE_WSL_DISTRO ?? "Ubuntu";
   const { port, warning } = parsePort(env.VIBETRIBE_PORT);
   if (warning) o.log(warning);
 
-  const wslRunning = wslIsRunning(distro);
-  const user = wslUser(distro, wslRunning, { env });
+  let wsl: WslAccess | null = null;
   async function readCredentials() {
-    const paths = await credentialPaths({ home, distro, isRunning: wslRunning, user });
+    const paths = await credentialPaths(home, wsl);
     const texts: string[] = [];
     for (const path of paths) {
       try {
@@ -176,14 +193,6 @@ export async function windowsHubConfig(o: WindowsHubOptions): Promise<WindowsHub
       fs: nodeDirPort,
       isAlive: isProcessAlive,
       creationTimes: windowsCreationTimes,
-    }),
-    new WslSessionSource({
-      distro,
-      fs: nodeDirPort,
-      isRunning: wslRunning,
-      user,
-      listProc: wslListProc(distro),
-      readStat: wslReadStat(distro),
     }),
   ];
 
@@ -213,6 +222,15 @@ export async function windowsHubConfig(o: WindowsHubOptions): Promise<WindowsHub
 
   return {
     summary: `sources ${[...sources.map((s) => s.name), REMOTE_SOURCE].join(", ")}, claude ${exe ?? "not found"}`,
+    wslSource: (distro) => {
+      wsl = wslAccess(distro, env);
+      return new WslSessionSource({
+        ...wsl,
+        fs: nodeDirPort,
+        listProc: wslListProc(distro),
+        readStat: wslReadStat(distro),
+      });
+    },
     config: {
       port,
       fallbackPorts: FALLBACK_PORTS,

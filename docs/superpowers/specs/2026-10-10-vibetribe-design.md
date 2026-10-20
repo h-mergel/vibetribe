@@ -1,6 +1,6 @@
 # VibeTribe – Design-Spezifikation (v1)
 
-- **Stand:** 2026-10-17, Revision 11 (Plan 13: Drift-Prüfungen `pnpm drift`, stündliche Selbstprüfung der Zentrale, Live-Test `pnpm e2e:live` auf Haiku als einzige Ausnahme von „kein Modellaufruf“, §10, §11.3); Revision 10 (Plan 12: gesehen, wenn die Session in Claude Desktop geöffnet wird, eigene Inbox-Sprünge zählen nicht, §4.4, §4.8, §6.2, §9, §10); Revision 9 (Plan 11: angepinnte Sessions aus Claude Desktop §4.7, Property Inspector der Slot-Aktion §6.2, Vorrang angepinnter Sessions in der Slot-Zuordnung §6.3, §10, Spalte „Pin“ §11.1); Revision 8 (gelesene REM-Eingabe ist ruhig, §4.3); Revision 7 (Plan 10: Port-Datei als zweiter Vertrag §3.1, Ziel des Reporters §8.1, Ersatzports, neuer Bind-Versuch und Port-Datei §8.2, §8.4, §10, §11.1, keine Handler-Prüfung §9); Revision 6 (Plan 8: `review_ready` als Done §4.3, REM nach einem Neustart §4.5, `background.json` mit 30-s-Abstand und nur mit Listener §4.6, „Open…“ 2,5 s und Handler-Ursache im Log §9); Revision 5 (Plan 7: Herkunft nach Host, Slots für Alarme, `+N`, Hintergrund-Jobs über Neustarts, Extra-Taste; §4.1, §4.5, §4.6, §6.2, §6.3, §9; Done counts as attention (user decision 2026-10-14): §5, §6.3, §12; Handoff v2, Done atmet nicht (R11), Rahmen-Einzug (R12): §5, §12); Revision 4 (Plan 6: Claude-Design-Handoff, §5, §6, §12); Revision 3 (Proben-Ergebnisse aus Plan 1, `docs/research/probes/`); Revision 2: Review durch Claude Fable
+- **Stand:** 2026-10-18, Revision 12 (Plan 14: Marketplace-Veröffentlichung; Einrichtung der Hooks aus dem Property Inspector, Kopie von Stream Decks Node als Hook-Laufzeit, WSL per Klick, Standard-Distribution statt `Ubuntu`, Paket über `pnpm plugin:pack`; §2.1, §2.2, §3.1, §4.1, §6.2, §8.1, §8.2, §8.4, §10, §12, §13); Revision 11 (Plan 13: Drift-Prüfungen `pnpm drift`, stündliche Selbstprüfung der Zentrale, Live-Test `pnpm e2e:live` auf Haiku als einzige Ausnahme von „kein Modellaufruf“, §10, §11.3); Revision 10 (Plan 12: gesehen, wenn die Session in Claude Desktop geöffnet wird, eigene Inbox-Sprünge zählen nicht, §4.4, §4.8, §6.2, §9, §10); Revision 9 (Plan 11: angepinnte Sessions aus Claude Desktop §4.7, Property Inspector der Slot-Aktion §6.2, Vorrang angepinnter Sessions in der Slot-Zuordnung §6.3, §10, Spalte „Pin“ §11.1); Revision 8 (gelesene REM-Eingabe ist ruhig, §4.3); Revision 7 (Plan 10: Port-Datei als zweiter Vertrag §3.1, Ziel des Reporters §8.1, Ersatzports, neuer Bind-Versuch und Port-Datei §8.2, §8.4, §10, §11.1, keine Handler-Prüfung §9); Revision 6 (Plan 8: `review_ready` als Done §4.3, REM nach einem Neustart §4.5, `background.json` mit 30-s-Abstand und nur mit Listener §4.6, „Open…“ 2,5 s und Handler-Ursache im Log §9); Revision 5 (Plan 7: Herkunft nach Host, Slots für Alarme, `+N`, Hintergrund-Jobs über Neustarts, Extra-Taste; §4.1, §4.5, §4.6, §6.2, §6.3, §9; Done counts as attention (user decision 2026-10-14): §5, §6.3, §12; Handoff v2, Done atmet nicht (R11), Rahmen-Einzug (R12): §5, §12); Revision 4 (Plan 6: Claude-Design-Handoff, §5, §6, §12); Revision 3 (Proben-Ergebnisse aus Plan 1, `docs/research/probes/`); Revision 2: Review durch Claude Fable
 - **Status:** Entwurf zur Freigabe
 - **Repo:** `h-mergel/vibetribe` (öffentlich), lokal `~/dev/projects/vibetribe`
 - **Recherche:** [`docs/research/2026-10-10-competitors.md`](../../research/2026-10-10-competitors.md), [`docs/research/2026-10-10-technical.md`](../../research/2026-10-10-technical.md)
@@ -38,7 +38,8 @@ Beobachtung auf dem Zielrechner: Fast alle Sessions laufen über Claude Desktop 
 - Anzeige laufender Hintergrund-Jobs (Shell, Agents, Monitore) auch bei fertigen Durchgängen
 - Sprung zur Session, plus „gesehen“-Quittung
 - 5h- und Wochenlimit mit Tempo-Markierung, Extra-Usage-Credits
-- Setup-Befehl für Hooks und Statusline auf Windows, in WSL und auf dem Mac (Mac nicht umgesetzt, Plan 5)
+- Setup-Befehl für Hooks und Statusline auf Windows, in WSL und auf dem Mac (Mac nicht umgesetzt, Plan 5); unter Windows und in WSL auch per Klick im Property Inspector (§8.4)
+- Kostenloser Eintrag im Elgato Marketplace (Plan 14, ADR 0011)
 - Mac-Agent als launchd-Dienst (lokales Relais und Lebenszeichen) (nicht umgesetzt, Plan 5)
 - Debug-Seite, Debug-JSON, Simulator, PNG-Galerie aller Kacheln
 
@@ -48,7 +49,6 @@ Beobachtung auf dem Zielrechner: Fast alle Sessions laufen über Claude Desktop 
 - Sessions vom Deck aus starten
 - VS Code (Panel und integriertes Terminal)
 - Andere Agents als Claude Code
-- Veröffentlichung im Elgato Marketplace. Das Plugin wird aber schon auf SDK v3 gebaut und schreibt nicht ins Plugin-Verzeichnis, damit die Veröffentlichung später möglich bleibt.
 - Sounds
 - Stream Deck +, XL und andere Geräte (sie funktionieren voraussichtlich, werden aber nicht gezielt gestaltet)
 - Geschätzte API-Kosten pro Session („Kosten“ bedeutet in v1 die verbrauchten Extra-Usage-Credits)
@@ -82,7 +82,7 @@ VibeTribe ist kein Bastelprojekt. Die Prinzipien werden pragmatisch angewendet, 
   - `DeckSurface` (`setImage`, Tasten)
   - `Clock`
   - `Logger`
-- Abhängigkeiten zeigen nur nach innen: `plugin → render → core`. Der Reporter ist eigenständig. Das Event-Format (Hülle §8.3) und seit Plan 10 die Port-Datei der Zentrale (§8.2) sind die einzigen gemeinsamen Verträge zwischen Reporter und Zentrale; beide werden im kleinen Paket `packages/protocol` (Typen + Validierung) genau einmal definiert.
+- Abhängigkeiten zeigen nur nach innen: `plugin → render → core`. Der Reporter ist eigenständig; nur `@vibetribe/reporter/setup` darf das Plugin einbinden (`plugin → reporter`, ADR 0011). Das Event-Format (Hülle §8.3) und seit Plan 10 die Port-Datei der Zentrale (§8.2) sind die einzigen gemeinsamen Verträge zwischen Reporter und Zentrale; beide werden im kleinen Paket `packages/protocol` (Typen + Validierung) genau einmal definiert.
 - Eine einzige **Composition Root** im Plugin erzeugt und verdrahtet alle Adapter per Konstruktor-Injektion. Keine globalen Singletons, kein DI-Framework.
 
 **SOLID, pragmatisch**
@@ -171,7 +171,7 @@ Die Tabelle ist nach Priorität absteigend sortiert. Die höchste zutreffende ge
   - Ein Aufruf pro Abfrage kostet etwa 1,4 s und kommt nicht in Frage. `wmic` existiert in Windows 11 24H2+ nicht mehr.
 - **WSL:**
   - Abgefragt wird nur, wenn `wsl.exe -l --running` die konfigurierte Distro listet (Zwischenspeicher 5 s). So startet das Plugin eine gestoppte Distro nie und hält sie nicht wach.
-  - Konfigurierbar sind der Distro-Name (Standard `Ubuntu`) und der Linux-Benutzer (Standard: per `wsl.exe -d <distro> whoami` ermittelt).
+  - Konfigurierbar sind die Distribution (Standard: die Standard-Distribution aus `wsl.exe -l -v`; `VIBETRIBE_WSL_DISTRO` überschreibt sie, `none` schaltet WSL ab) und der Linux-Benutzer (Standard: per `wsl.exe -d <distro> whoami` ermittelt).
   - Die Startzeit kommt aus `\\wsl.localhost\<distro>\proc\<pid>\stat`, Feld 22 (in Clock-Ticks seit dem Systemstart), und wird mit `procStart` verglichen.
 - `SessionEnd` entfernt eine Session sofort. Bei `reason` ∈ {`clear`, `resume`} bleibt ihr Slot reserviert (siehe 6.3). Events, die bis zu 60 s nach `SessionEnd` für dieselbe Session eintreffen (späte asynchrone Hooks), werden ignoriert.
 - Sessions, die nur aus Hooks bekannt sind (keine Session-Datei verknüpft), werden nach 30 min ohne Event entfernt.
@@ -314,9 +314,9 @@ Die Status-Taste zeigt die Zeilen WIN, WSL, REM (Remote-Sessions, §4.3) und LIM
 | **5h-Limit** | Ring mit Verbrauch in %, Tempo-Markierung, Zeit bis zum Reset | sofort neu laden (unter Beachtung des Backoffs) | — |
 | **Wochenlimit** | wie 5h-Limit, mit dem 7-Tage-Fenster | wie oben | — |
 | **Extra Usage** | verbrauchte Credits / Monatslimit in Währung, Balken; `As of 14:32`, wenn die Daten älter als 10 min sind | öffnet `https://claude.ai/settings/usage` im Standardbrowser. Dort schaltet der Nutzer Extra Usage ein oder aus; das Plugin ändert nie selbst Konto- oder Abrechnungseinstellungen | — |
-| **Status** | Gesundheit der Quellen: WIN, WSL, REM, LIM (`ok`, `stale`, `down`, `off`); Hinweise wie „Port in use“ oder „No token“ | alle vier Quellen 5 s lang (`expanded`) | öffnet die Debug-Seite im Browser (Diagnose) |
+| **Status** | Gesundheit der Quellen: WIN, WSL, REM, LIM (`ok`, `stale`, `down`, `off`); Hinweise wie „Port in use“, „Setup“ (Hooks fehlen oder sind veraltet, §8.4) oder „No token“ | alle vier Quellen 5 s lang (`expanded`) | öffnet die Debug-Seite im Browser (Diagnose) |
 
-**Property Inspector der Aktion „Session slot“ (Plan 11):** ein Kästchen „Prefer pinned sessions“, Standard an. Es ist eine globale Einstellung für alle Slots (Stream-Deck-`globalSettings`, Schlüssel `preferPinned`) und nur in der Stream-Deck-App am PC sichtbar, nicht auf dem Gerät. Die Seite `ui/slot.html` liegt im Plugin, lädt nichts nach und funktioniert offline. Das Plugin liest die Einstellung einmal nach dem Verbinden und folgt jeder Änderung sofort, ohne Neustart. Bis der erste Wert angewandt ist, gelten keine Pins (beim Start also nie kurz „an“, wenn der Nutzer „aus“ gewählt hat); ein Lesefehler steht im Log, dann gilt der Standard (an). Aus: Die Slot-Zuordnung arbeitet genau wie ohne Pins (§6.3).
+**Property Inspector (Plan 11, Plan 14):** Alle Aktionen teilen eine Seite, `ui/vibetribe.html`; sie liegt im Plugin, lädt nichts nach und funktioniert offline. Sie zeigt immer die Einrichtung der Hooks (§8.4). Nur an der Aktion „Session slot“ zeigt sie zusätzlich ein Kästchen „Prefer pinned sessions“, Standard an. Es ist eine globale Einstellung für alle Slots (Stream-Deck-`globalSettings`, Schlüssel `preferPinned`) und nur in der Stream-Deck-App am PC sichtbar, nicht auf dem Gerät. Das Plugin liest die Einstellung einmal nach dem Verbinden und folgt jeder Änderung sofort, ohne Neustart. Bis der erste Wert angewandt ist, gelten keine Pins (beim Start also nie kurz „an“, wenn der Nutzer „aus“ gewählt hat); ein Lesefehler steht im Log, dann gilt der Standard (an). Aus: Die Slot-Zuordnung arbeitet genau wie ohne Pins (§6.3).
 
 ### 6.3 Slot-Zuordnung
 
@@ -413,7 +413,7 @@ Der Zweig über den Mac-Agent und Tailscale ist nicht umgesetzt, Plan 5.
 - **Eingetragene Events:** `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PermissionRequest`, `Notification`, `Elicitation`, `ElicitationResult`, `Stop`, `StopFailure`, `SubagentStart`, `SubagentStop`, `PreCompact`, `SessionEnd`.
 - **Eintragsform:**
   - **`async: true`** für alle Events außer `SessionEnd`. Claude wartet also nie auf den Reporter. `SessionEnd` bleibt synchron (das Zeitbudget von 1,5 s reicht).
-  - **Ohne Shell:** `command` ist der **absolute Pfad zu `node`**, den `setup` pro Host ermittelt (`process.execPath`), dazu `args: [<Pfad zu reporter.mjs>, "hook"]` und `timeout: 2`.
+  - **Ohne Shell:** `command` ist der **absolute Pfad zu `node`**, den `setup` pro Host ermittelt (`process.execPath`), dazu `args: [<Pfad zu reporter.mjs>, "hook"]` und `timeout: 2`. Richtet das Plugin die Hooks unter Windows ein, ist es die Kopie `%USERPROFILE%\.vibetribe\node-<version>.exe` von Stream Decks Node (§8.4).
   - Claude Desktop liest weder PowerShell-Profile noch Shims von nvm, fnm oder volta, und launchd kennt keinen `PATH`. Deshalb braucht es den absoluten Pfad.
 - **Ablauf:** liest den Payload von stdin, ergänzt ihn um eine Hülle (8.3), schickt ihn per HTTP-POST mit 300 ms Timeout.
   - Er gibt **nie** eine Entscheidung zurück: keine Ausgabe auf stdout, Exit-Code immer 0.
@@ -443,7 +443,7 @@ Der Zweig über den Mac-Agent und Tailscale ist nicht umgesetzt, Plan 5.
   - Jeder Request muss den Header `Host` ∈ {`127.0.0.1:<port>`, `localhost:<port>`} tragen.
   - Requests mit einem `Origin`-Header werden abgelehnt (403).
   - `POST /v1/*` erfordert `Content-Type: application/json` und `Authorization: Bearer <token>`.
-  - Den Token erzeugt `setup` unter Windows und legt ihn in `%USERPROFILE%\.vibetribe\token` ab. Der Reporter in WSL liest ihn über `/mnt/c/Users/<user>/.vibetribe/token`.
+  - Den Token erzeugt das Plugin beim Start (oder `setup` unter Windows), falls er fehlt, und legt ihn in `%USERPROFILE%\.vibetribe\token` ab. Der Reporter in WSL liest ihn über `/mnt/c/Users/<user>/.vibetribe/token`.
   - `/debug*` ist nur bei einer Loopback-Gegenstelle erreichbar.
 - **Tailscale-Schnittstelle** (standardmäßig aus) (nicht umgesetzt, Plan 5):
   - Bindet zusätzlich auf die Tailscale-IP. Ist Tailscale beim Start noch nicht bereit, versucht sie es alle 30 s erneut. Der Grund steht im Debug-Log.
@@ -497,6 +497,10 @@ Maßgeblich ist `packages/protocol/src/envelope.ts` (Typen) und `validate.ts` (P
 ### 8.4 Setup (`vibetribe setup`)
 
 - Läuft auf jedem Host einzeln: Windows (PowerShell), in WSL und auf dem Mac (Mac nicht umgesetzt, Plan 5).
+- **Aus dem Plugin (Plan 14, ADR 0011):** Der Property Inspector jeder Aktion zeigt den Zustand der Hooks unter Windows (`missing`, `outdated`, `installed`, gelesen mit `setupState`) und die Knöpfe „Set up hooks“ bzw. „Update hooks“ und „Remove hooks“. Nur dieser Klick ändert `settings.json`.
+  - Windows: Das Plugin ruft `install`/`uninstall` des Reporters im eigenen Prozess. Den Reporter schreibt es aus seinem eigenen Code nach `%USERPROFILE%\.vibetribe\reporter.mjs` (es liest nie seinen Plugin-Ordner, DRM); die Hooks laufen mit der Kopie `%USERPROFILE%\.vibetribe\node-<version>.exe` von Stream Decks Node (Version aus `process.versions.node`), weil dessen Ordner die Version trägt und mit App-Updates wechselt. Eine vorhandene Kopie derselben Version wird nie ersetzt (Windows sperrt sie, solange ein Hook sie ausführt); andere Kopien löscht die Einrichtung nach dem Schreiben von `settings.json`, soweit sie nicht gesperrt sind; die Kopie, die die bisherigen Einstellungen nennen, bleibt (laufende Sessions nutzen sie noch), nach einem Update gibt es also bis zum nächsten Update bis zu zwei Kopien. „Remove hooks“ lässt Kopie und Reporter liegen.
+  - `outdated`: Hooks und Statusline sind eingetragen, aber `reporter.mjs` ist nicht der Reporter dieses Plugins oder ein `node` der Hooks fehlt. Die Status-Taste zeigt „Setup“, solange der Zustand nicht `installed` ist (Quelle `setup` der Zentrale, veraltet nie).
+  - WSL: Die Distribution kommt aus `VIBETRIBE_WSL_DISTRO` (`none` schaltet WSL ab), sonst aus `wsl.exe -l -v` (Zeile mit `*`, UTF-16 oder mit `WSL_UTF8=1` UTF-8; `docker-desktop…` als Standard zählt als keine). Die Suche läuft im Hintergrund, nie vor dem Verbinden mit Stream Deck (bis 15 s nach der Anmeldung möglich), und wiederholt sich bei jedem Öffnen der Seite, bis sie eine Distribution findet; dann kommt die WSL-Quelle der Zentrale dazu und die Seite zeigt „Set up in WSL“ (erst nach Windows) und „Remove from WSL“. Der Klick startet `wsl.exe -d <distro> --cd ~ -e sh -lc …`: `wslpath` übersetzt den Windows-Reporter, der Linux-`node` aus dem Login-`PATH` (`~/.profile`) führt `setup` aus (mit `--windows-home`, aus dem Pfad des Reporters) bzw. `setup --uninstall`. Node.js 20 oder neuer ist Pflicht (der Reporter wird für Node 20 gebaut; Exit 4 sonst); fehlt `node` im Login-`PATH` (Exit 127, z. B. `nvm` nur in `~/.bashrc`), sagt die Seite das. Das startet eine gestoppte Distribution, deshalb nur auf Klick, mit 60 s Zeitlimit.
 - **Hooks und Statusline** in `~/.claude/settings.json` eintragen:
   - legt vorher ein Backup an (`settings.json.vibetribe-<datum>.bak`)
   - schreibt atomar (temporäre Datei, dann umbenennen), weil laufende Sessions die Datei überwachen
@@ -541,6 +545,8 @@ Die erste Spalte nennt die Art der Session. Seit Plan 7 ist das nicht mehr das A
 | Plugin bzw. Zentrale aus | Reporter verwirft Events mit Exit 0; dank `async` läuft Claude unverändert |
 | Plugin-Neustart | Zustand aus Session-Dateien, dem Lebenszeichen des Mac-Agents (nicht umgesetzt, Plan 5) und `usage-cache.json` wiederhergestellt; `done_unseen` lokaler Sessions geht verloren; ungelesene REM-Durchgänge erscheinen einmal neu (4.5) |
 | WSL-Distro gestoppt | WSL-Quelle „inaktiv“, keine Abfrage, kein Fehler |
+| Kein WSL oder keine Standard-Distribution (Plan 14) | keine WSL-Quelle (Status-Zeile WSL `off`), keine WSL-Knöpfe im Property Inspector; beim nächsten Öffnen der Seite wird erneut gesucht |
+| Hooks fehlen oder sind veraltet (§8.4) | Status-Taste „Setup“ (nach „Port in use“); der Property Inspector bietet die Einrichtung an |
 | WSL fährt während einer Abfrage herunter | Lesefehler auf `\\wsl.localhost` werden als „inaktiv“ gewertet, die Sessions dabei nicht entfernt; nach 3 Fehlversuchen in Folge wird die Quelle für 30 s pausiert |
 | Mac nicht erreichbar (nicht umgesetzt, Plan 5) | Mac-Sessions nach 90 s `no_signal`, nach weiteren 2 min entfernt; Status-Kachel: REM-Zeile `down` (`off`, wenn nicht konfiguriert) |
 | Remote-Liste nicht erreichbar (429, 5xx, Netz, Anmeldung, unerwartete Antwort) | Pause verdoppelt sich bis 5 min; REM-Sessions nach 90 s `no_signal`, nach 210 s entfernt; Status-Kachel: REM-Zeile `down` (`off`, wenn nicht konfiguriert) |
@@ -641,7 +647,7 @@ Das Aussehen der Kacheln entsteht in Claude Design. Dieser Abschnitt legt fest, 
 | Inbox | dringendste Session (Titel und Zustand), Zahl der wartenden Sessions | `+N` Sessions, die Aufmerksamkeit brauchen, ohne sichtbaren Slot (needs_permission/needs_input/error/done_unseen, ungesehen, §6.3; Done counts as attention, user decision 2026-10-14) |
 | 5h / Woche | Ring in %, Tempo-Markierung, Reset-Countdown | Pfeil nach oben neben der Tempo-Zahl (vor Plan), `As of 14:32`, `Sign in` |
 | Extra Usage | Betrag / Limit in Währung, Balken | `As of 14:32`, `Disabled` |
-| Status | vier Quellen (WIN, WSL, REM, LIM) mit je vier Zuständen (`ok`, `stale`, `down`, `off`) | Hinweise `Port in use`, `No token` |
+| Status | vier Quellen (WIN, WSL, REM, LIM) mit je vier Zuständen (`ok`, `stale`, `down`, `off`) | Hinweise `Port in use`, `Setup`, `No token` |
 
 - **Farben:** final aus dem Claude-Design-Handoff, auf Basis von Okabe-Ito (`#0072B2`, `#E69F00`, `#D55E00`, `#009E73`, `#56B4E9`) auf dunklem Grund. Jede Zustandsfarbe braucht ein Symbol und ein Wort. Die Abzeichen sind farbneutral.
 - **Animation als Parameter, nicht als GIF:** Atmen (nur `needs_*`; Periode 1,2 s, 4 Stufen 0,35 · 0,675 · 1 · 0,675 für Rahmen und Tönung; `done_unseen` atmet nie, R11), Arbeitszeichen (heller Punkt wandert alle 2 s, `tick` 0–2). Der Renderer erzeugt die einzelnen Bilder.
@@ -651,11 +657,11 @@ Das Aussehen der Kacheln entsteht in Claude Design. Dieser Abschnitt legt fest, 
 
 - pnpm-Workspace, TypeScript (strict), Biome, vitest, Node 24
 - `@elgato/streamdeck` 3.x, Manifest `SDKVersion` 3, Stream Deck ≥ 7.1
-- Stream-Deck-CLI (`streamdeck link`, `dev`, `validate`, `pack`)
+- Stream-Deck-CLI `@elgato/cli` als Dev-Abhängigkeit: `pnpm plugin:pack` baut, prüft (`streamdeck validate`) und packt nach `dist/dev.h2k.vibetribe.streamDeckPlugin`; dazu die Bilder für den Maker Console nach `dist/marketplace/` (Plan 14). `.sdignore` hält Logs und die SVG-Quelle des Icons aus dem Paket.
 - Plugin-UUID `dev.h2k.vibetribe` (Domain h2k.dev)
 - Lizenz MIT
 - GitHub `h-mergel/vibetribe` (öffentlich)
-- Der Reporter wird zu einer einzelnen `.mjs`-Datei gebündelt und von `setup` an einen festen Ort pro Host kopiert (`~/.vibetribe/reporter.mjs`). Es gibt keine globale npm-Installation.
+- Der Reporter wird zu einer einzelnen `.mjs`-Datei gebündelt und von `setup` an einen festen Ort pro Host kopiert (`~/.vibetribe/reporter.mjs`). Es gibt keine globale npm-Installation. Das Plugin trägt dasselbe Bundle als Text in `bin/plugin.js` (§8.4).
 
 ## 14. Risiken und früh zu prüfende Annahmen
 

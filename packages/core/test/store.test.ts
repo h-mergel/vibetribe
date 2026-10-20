@@ -123,7 +123,7 @@ describe("removal", () => {
         id: "wsl:Ubuntu/s1",
         key: KEY,
         reason: "gone",
-        cwd: "/home/heinrich/dev/projects/atlas",
+        cwd: "/home/h2k/dev/projects/atlas",
         pid: 4242,
       },
     ]);
@@ -192,7 +192,7 @@ describe("removal", () => {
     const removed = store.apply(ev({ type: "session_end", at: 2, reason: "clear" }));
     expect(removed[0]).toMatchObject({
       reason: "clear",
-      cwd: "/home/heinrich/dev/projects/atlas",
+      cwd: "/home/h2k/dev/projects/atlas",
       pid: 4242,
     });
     store.apply(ev({ type: "tool_end", at: 3, toolName: "Bash", toolUseId: "t1", agentId: null }));

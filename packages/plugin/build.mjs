@@ -1,8 +1,15 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { Resvg } from "@resvg/resvg-js";
 import { build } from "esbuild";
+import { reporterBuild } from "../reporter/build.mjs";
 
 const OUT = "dev.h2k.vibetribe.sdPlugin";
+
+// The plugin carries the reporter inside its code and writes it out on setup: under the
+// Marketplace DRM its own files may be encrypted, so it never reads its folder. Built in memory
+// with the reporter's own options: reporter/dist belongs to the reporter's tests.
+const bundled = await build({ ...reporterBuild, write: false });
+const reporter = bundled.outputFiles[0].text;
 
 // One file, SDK and ws included; the app's Node 24 runs it without node_modules.
 await build({
@@ -14,6 +21,7 @@ await build({
   target: "node24",
   // optional native accelerators of ws; absent at runtime, ws falls back to JS
   external: ["bufferutil", "utf-8-validate"],
+  define: { __REPORTER_SOURCE__: JSON.stringify(reporter) },
   // ws is CommonJS and require()s node built-ins; an ESM bundle needs a real require for them
   banner: {
     js: 'import { createRequire as __createRequire } from "node:module"; const require = __createRequire(import.meta.url);',

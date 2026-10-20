@@ -45,6 +45,23 @@ const fakeSource = (scan: SessionSource["scan"]): SessionSource => ({
 });
 
 describe("startHub", () => {
+  it("scans a source added after the start, and none added after stop", async () => {
+    let scans = 0;
+    const src = fakeSource(async (now) => {
+      scans++;
+      return { host: "win", hostKind: "windows", at: now, sessions: [session] };
+    });
+    const r = await start({ port: 0, token: "t", sources: [], usage: null });
+    r.addSource(src);
+    await wait(50);
+    expect(scans).toBe(1);
+    expect(r.hub.state(Date.now()).sessions).toHaveLength(1);
+    await r.stop();
+    r.addSource(src);
+    await wait(50);
+    expect(scans).toBe(1);
+  });
+
   it("binds the port, reports ingress ok, scans sources and serves state.json", async () => {
     let scans = 0;
     const r = await start({

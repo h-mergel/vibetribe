@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>VibeTribe</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 12px 16px;
+        background: #2d2d2d;
+        color: #d8d8d8;
+        font: 13px "Segoe UI", sans-serif;
+      }
+      label {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      p {
+        margin: 6px 0;
+        color: #969696;
+        font-size: 12px;
+      }
+      section + section {
+        margin-top: 14px;
+      }
+      button {
+        margin: 4px 8px 0 0;
+      }
+      button.link {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: #8ab4f8;
+        font: inherit;
+        cursor: pointer;
+      }
+      #message.failed {
+        color: #ff8a80;
+      }
+      [hidden] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <section id="pinned" hidden>
+      <label><input type="checkbox" id="preferPinned" checked /> Prefer pinned sessions</label>
+      <p>Sessions pinned in Claude Desktop keep their slots. Applies to all session slots.</p>
+    </section>
+    <section>
+      <strong>Claude Code hooks</strong>
+      <p id="windows">Checking…</p>
+      <button type="button" id="install" hidden>Set up hooks</button>
+      <button type="button" id="remove" hidden>Remove hooks</button>
+    </section>
+    <section id="wsl" hidden>
+      <strong id="wslName">WSL</strong>
+      <p>Adds the same hooks to ~/.claude/settings.json inside WSL (with a backup); starts the distribution if it is stopped. Needs Node.js 20 or later there. Set up Windows first.</p>
+      <button type="button" id="installWsl">Set up in WSL</button>
+      <button type="button" id="removeWsl">Remove from WSL</button>
+    </section>
+    <section>
+      <p id="message"></p>
+      <p><button type="button" id="help" class="link">What does setup change?</button></p>
+    </section>
+    <script>
+      // Stream Deck calls this global once the inspector is open (SDK version 3)
+      window.connectElgatoStreamDeckSocket = (port, uuid, registerEvent, _info, actionInfo) => {
+        const KEY = "preferPinned";
+        const SLOT = "dev.h2k.vibetribe.slot";
+        const HELP = "https://github.com/h-mergel/vibetribe#install-from-the-marketplace";
+        const STATES = {
+          missing:
+            "Not set up. Setup adds VibeTribe's hooks and a statusline passthrough to ~/.claude/settings.json (with a backup) and copies Stream Deck's Node.js (about 90 MB) to .vibetribe in your user folder to run them.",
+          outdated: "Set up, but they need an update. Setup may copy Stream Deck's Node.js again (about 90 MB).",
+          installed: "Set up on Windows.",
+        };
+        const $ = (id) => document.getElementById(id);
+        const action = JSON.parse(actionInfo).action;
+        const box = $("preferPinned");
+        const socket = new WebSocket(`ws://127.0.0.1:${port}`);
+        let settings = {};
+        const send = (event, payload) =>
+          socket.send(JSON.stringify({ event, action, context: uuid, payload }));
+        const ask = (setup) => send("sendToPlugin", { setup });
+        $("pinned").hidden = action !== SLOT;
+        socket.onopen = () => {
+          socket.send(JSON.stringify({ event: registerEvent, uuid }));
+          socket.send(JSON.stringify({ event: "getGlobalSettings", context: uuid }));
+          ask("refresh");
+        };
+        const show = (view) => {
+          $("windows").textContent = STATES[view.windows] ?? STATES.missing;
+          $("install").hidden = view.windows === "installed";
+          $("install").textContent = view.windows === "outdated" ? "Update hooks" : "Set up hooks";
+          $("remove").hidden = view.windows === "missing";
+          $("wsl").hidden = view.wsl === null;
+          $("wslName").textContent = `WSL (${view.wsl})`;
+          for (const id of ["install", "remove", "removeWsl"]) $(id).disabled = view.busy;
+          $("installWsl").disabled = view.busy || view.windows !== "installed";
+          $("message").textContent = view.busy ? "Working…" : (view.message?.text ?? "");
+          $("message").className = view.message && !view.message.ok ? "failed" : "";
+        };
+        socket.onmessage = (message) => {
+          const data = JSON.parse(message.data);
+          if (data.event === "sendToPropertyInspector") show(data.payload);
+          if (data.event !== "didReceiveGlobalSettings") return;
+          settings = data.payload?.settings ?? {};
+          box.checked = settings[KEY] !== false;
+        };
+        box.onchange = () => {
+          settings = { ...settings, [KEY]: box.checked };
+          socket.send(JSON.stringify({ event: "setGlobalSettings", context: uuid, payload: settings }));
+        };
+        $("install").onclick = () => ask("install");
+        $("remove").onclick = () => ask("remove");
+        $("installWsl").onclick = () => ask("install-wsl");
+        $("removeWsl").onclick = () => ask("remove-wsl");
+        $("help").onclick = () => send("openUrl", { url: HELP });
+      };
+    </script>
+  </body>
+</html>

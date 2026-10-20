@@ -59,11 +59,11 @@ describe("detectWindowsHome", () => {
     const calls: string[] = [];
     const exec: Exec = (file, args) => {
       calls.push(file);
-      if (file === "cmd.exe") return "C:\\Users\\Heinrich\r\n";
-      expect(args).toEqual(["-u", "C:\\Users\\Heinrich"]);
-      return "/mnt/c/Users/Heinrich\n";
+      if (file === "cmd.exe") return "C:\\Users\\h2k\r\n";
+      expect(args).toEqual(["-u", "C:\\Users\\h2k"]);
+      return "/mnt/c/Users/h2k\n";
     };
-    expect(detectWindowsHome({ platform: "linux", env, exec })).toBe("/mnt/c/Users/Heinrich");
+    expect(detectWindowsHome({ platform: "linux", env, exec })).toBe("/mnt/c/Users/h2k");
     expect(calls).toEqual(["cmd.exe", "wslpath"]);
   });
 

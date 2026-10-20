@@ -17,7 +17,7 @@ export function file(over: Partial<SessionFileInfo> = {}): SessionFileInfo {
   return {
     sessionId: "s1",
     pid: 4242,
-    cwd: "/home/heinrich/dev/projects/atlas",
+    cwd: "/home/h2k/dev/projects/atlas",
     entrypoint: "cli",
     name: null,
     hostSessionId: null,
@@ -35,7 +35,7 @@ export function view(over: Partial<SessionView> = {}): SessionView {
     hostKind: "wsl",
     badge: "WSL",
     title: "atlas",
-    cwd: "/home/heinrich/dev/projects/atlas",
+    cwd: "/home/h2k/dev/projects/atlas",
     state: "idle",
     detail: null,
     errorType: null,

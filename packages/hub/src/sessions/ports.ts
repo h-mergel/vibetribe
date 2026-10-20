@@ -23,15 +23,32 @@ export function isProcessAlive(
 
 export type Exec = (file: string, args: string[]) => Promise<string>;
 
-const runEncoded = (file: string, args: string[], encoding: BufferEncoding): Promise<string> =>
+/** Runs a Windows helper (PowerShell, wsl.exe) with a 15 s timeout, decoding its stdout. */
+const runDecoded = (
+  file: string,
+  args: string[],
+  decode: (out: Buffer) => string,
+): Promise<string> =>
   new Promise((resolve, reject) =>
-    execFile(file, args, { encoding, windowsHide: true, timeout: 15_000 }, (err, stdout) =>
-      err ? reject(err) : resolve(stdout),
+    execFile(
+      file,
+      args,
+      { encoding: "buffer", windowsHide: true, timeout: 15_000 },
+      (err, stdout) => (err ? reject(err) : resolve(decode(stdout))),
     ),
   );
 
-/** Runs a Windows helper (PowerShell, wsl.exe) with a 15 s timeout; utf8 output. */
-export const run: Exec = (file, args) => runEncoded(file, args, "utf8");
+export const run: Exec = (file, args) => runDecoded(file, args, (out) => out.toString("utf8"));
+
+/**
+ * wsl.exe lists in UTF-16LE, or in UTF-8 when WSL_UTF8=1 is set; UTF-16 of these ASCII lines
+ * always holds NUL bytes.
+ */
+export function decodeWslOutput(out: Buffer): string {
+  return out.toString(out.includes(0) ? "utf16le" : "utf8");
+}
+
+const runWsl = (args: string[]): Promise<string> => runDecoded("wsl.exe", args, decodeWslOutput);
 
 /** PowerShell 5.1 ConvertTo-Json of Win32_Process rows: an array, a single object, or nothing. */
 export function parseCimRows(json: string): Map<number, number> {
@@ -71,7 +88,7 @@ export async function windowsCreationTimes(
   );
 }
 
-/** Output of `wsl.exe -l --running --quiet` after utf16le decoding. */
+/** Output of `wsl.exe -l --running --quiet`, decoded (`decodeWslOutput`). */
 export function parseRunningDistros(text: string): string[] {
   return text
     .replace(/[﻿\0]/g, "")
@@ -80,15 +97,40 @@ export function parseRunningDistros(text: string): string[] {
     .filter(Boolean);
 }
 
+/**
+ * The default distribution from `wsl.exe -l -v` (decoded): the row marked `*`. The marker and the
+ * name column do not depend on the Windows language; distribution names hold no spaces. Docker
+ * Desktop's own distributions run no Claude Code: as the default they count as none.
+ */
+export function parseDefaultDistro(text: string): string | null {
+  for (const line of parseRunningDistros(text)) {
+    const m = /^\*\s+(\S+)/.exec(line);
+    if (m?.[1]) return m[1].startsWith("docker-desktop") ? null : m[1];
+  }
+  return null;
+}
+
+/**
+ * Asks wsl.exe for the default distribution without starting it; null without WSL, without a
+ * distribution, or when wsl.exe does not answer within 15 s (it can be slow right after login).
+ */
+export async function wslDefaultDistro(
+  list: () => Promise<string> = () => runWsl(["-l", "-v"]),
+): Promise<string | null> {
+  try {
+    return parseDefaultDistro(await list());
+  } catch {
+    return null;
+  }
+}
+
 export function wslIsRunning(distro: string, cacheMs = 5_000): () => Promise<boolean> {
   let cached: { at: number; value: boolean } | null = null;
   return async () => {
     if (cached && Date.now() - cached.at < cacheMs) return cached.value;
     let value = false;
     try {
-      value = parseRunningDistros(
-        await runEncoded("wsl.exe", ["-l", "--running", "--quiet"], "utf16le"),
-      ).includes(distro);
+      value = parseRunningDistros(await runWsl(["-l", "--running", "--quiet"])).includes(distro);
     } catch {
       value = false;
     }
@@ -127,18 +169,25 @@ export function wslUser(
   };
 }
 
-/** Credential files to read; the WSL one only while the distro runs (reading it would boot it). */
-export async function credentialPaths(p: {
-  home: string;
+/** One WSL distribution as the hub reaches it: never booted by a lookup. */
+export interface WslAccess {
   distro: string;
   isRunning: () => Promise<boolean>;
   user: () => Promise<string | null>;
-}): Promise<string[]> {
-  const paths = [win32.join(p.home, ".claude", ".credentials.json")];
-  if (!(await p.isRunning())) return paths;
-  const u = await p.user();
+}
+
+export function wslAccess(distro: string, env: NodeJS.ProcessEnv): WslAccess {
+  const isRunning = wslIsRunning(distro);
+  return { distro, isRunning, user: wslUser(distro, isRunning, { env }) };
+}
+
+/** Credential files to read; the WSL one only while the distro runs (reading it would boot it). */
+export async function credentialPaths(home: string, wsl: WslAccess | null): Promise<string[]> {
+  const paths = [win32.join(home, ".claude", ".credentials.json")];
+  if (!wsl || !(await wsl.isRunning())) return paths;
+  const u = await wsl.user();
   if (u) {
-    paths.push(`\\\\wsl.localhost\\${p.distro}\\home\\${u}\\.claude\\.credentials.json`);
+    paths.push(`\\\\wsl.localhost\\${wsl.distro}\\home\\${u}\\.claude\\.credentials.json`);
   }
   return paths;
 }

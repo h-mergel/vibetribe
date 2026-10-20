@@ -7,7 +7,7 @@ Legend (same as `2026-10-10-technical.md`):
 - **[L]** verified locally on this machine (command output, file, process list). The command is named.
 - **[I]** inferred or not tested. Treat as a design assumption to test.
 
-Environment facts [L]: Windows 11 Pro 10.0.26200. Stream Deck app 7.6.0.23012 (from the `-info` argument of the running plugin processes). It bundles Node `20.20.0` and `24.13.1` in `%APPDATA%\Elgato\StreamDeck\NodeJS\`. Windows `claude` 2.1.287 at `C:\Users\Heinrich\.local\bin\claude.exe`. WSL Ubuntu: Node 24.19.0, pnpm 10.33.0, `networkingMode=mirrored` in `~/.wslconfig`. Devices known to the app: "Stream Deck" 5x3 (type 0), "Stream Deck Mobile" 3x2 (type 3), "MCP Deck" 8x4 (type 14). Type 14 is not in the `DeviceType` enum of `@elgato/schemas@0.5.2` (0..13, [V] package contents), so the app is newer than the SDK enum.
+Environment facts [L]: Windows 11 Pro 10.0.26200. Stream Deck app 7.6.0.23012 (from the `-info` argument of the running plugin processes). It bundles Node `20.20.0` and `24.13.1` in `%APPDATA%\Elgato\StreamDeck\NodeJS\`. Windows `claude` 2.1.287 at `C:\Users\<user>\.local\bin\claude.exe`. WSL Ubuntu: Node 24.19.0, pnpm 10.33.0, `networkingMode=mirrored` in `~/.wslconfig`. Devices known to the app: "Stream Deck" 5x3 (type 0), "Stream Deck Mobile" 3x2 (type 3), "MCP Deck" 8x4 (type 14). Type 14 is not in the `DeviceType` enum of `@elgato/schemas@0.5.2` (0..13, [V] package contents), so the app is newer than the SDK enum.
 
 ---
 
@@ -151,7 +151,7 @@ streamDeck.connect();
 
 ### Logger
 
-[V] `streamDeck.logger` (`@elgato/utils` Logger): `trace/debug/info/warn/error`, `setLevel("trace"|...)`, `createScope("Name")`. Default level INFO in production, DEBUG in debug mode; entries format `<iso_date> <LEVEL> [[scope]: ]<message>`. File target: `dest: path.join(cwd(), "logs")`, file name `<pluginUUID>`, `maxFileCount: 10` (`dist/plugin/logging/index.js`). Docs: `<plugin>.sdPlugin/logs/<uuid>.0.log`, 0 = newest, new file per start [V https://docs.elgato.com/streamdeck/sdk/guides/logging]. Console target is added only in debug mode. Discrepancy: docs say max 10 MiB per file, the 3.0.2 code says `50 * 1024 * 1024` [V both]. Stream Deck app logs are separate: `%APPDATA%\Elgato\StreamDeck\logs\StreamDeck.log` [V docs; L files present, they contain `ESDCustomPlugin::onSessionConnected [com.heinrich.mictoggle] Plugin connected` style lines for plugin start/stop].
+[V] `streamDeck.logger` (`@elgato/utils` Logger): `trace/debug/info/warn/error`, `setLevel("trace"|...)`, `createScope("Name")`. Default level INFO in production, DEBUG in debug mode; entries format `<iso_date> <LEVEL> [[scope]: ]<message>`. File target: `dest: path.join(cwd(), "logs")`, file name `<pluginUUID>`, `maxFileCount: 10` (`dist/plugin/logging/index.js`). Docs: `<plugin>.sdPlugin/logs/<uuid>.0.log`, 0 = newest, new file per start [V https://docs.elgato.com/streamdeck/sdk/guides/logging]. Console target is added only in debug mode. Discrepancy: docs say max 10 MiB per file, the 3.0.2 code says `50 * 1024 * 1024` [V both]. Stream Deck app logs are separate: `%APPDATA%\Elgato\StreamDeck\logs\StreamDeck.log` [V docs; L files present, they contain `ESDCustomPlugin::onSessionConnected [com.example.mictoggle] Plugin connected` style lines for plugin start/stop].
 
 ### Opening URLs and `claude://` deep links
 
@@ -380,7 +380,7 @@ Side observation [L]: the week-limit row from `/cost` reads **89 % used**, reset
 
 ## 2.3 When does the CLI refresh? (read from the 2.1.287 binary)
 
-I extracted strings from `C:\Users\Heinrich\.local\bin\claude.exe` (247 MB; the JS is embedded as readable text). Findings [L, minified identifiers, so the call graph is incomplete]:
+I extracted strings from `C:\Users\<user>\.local\bin\claude.exe` (247 MB; the JS is embedded as readable text). Findings [L, minified identifiers, so the call graph is incomplete]:
 
 - Threshold function: `function pF(e,n=Date.now()){if(e===null)return!1;return n+300000>=e}`. The token is "due" when **now + 5 minutes >= expiresAt**, so a refresh happens only inside the last 5 minutes before expiry or after expiry. (A third-party script comment also claims a 5-minute buffer: [I] weaker evidence.)
 - Refresh routine (`fl`, wrapped as `$i()`/`l8()`): re-reads the credentials, returns `"not_needed"` when `!pF(expiresAt)`, otherwise takes a **lock** in the config directory (`ELOCKED` retried up to 5 times, 1-2 s apart), re-reads, resolves races when another process already refreshed (`refresh_race_resolved`), and writes the new `accessToken`/`refreshToken`/`expiresAt` back. It also has outcomes `no_refresh_token`, `known_dead_refresh_token`, `account_on_hold`.

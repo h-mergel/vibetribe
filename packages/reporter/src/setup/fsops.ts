@@ -62,15 +62,18 @@ export function writeFileAtomic(path: string, content: string, mode?: number): v
   });
 }
 
-/** Atomic JSON write without backup; a file that already has this content is not touched. */
-export function writeJsonAtomic(path: string, value: unknown, mode?: number): void {
-  const content = json(value);
+/** Atomic write without backup; a file that already has this content is not touched. */
+export function writeTextIfChanged(path: string, content: string, mode?: number): void {
   try {
     if (readFileSync(path, "utf8") === content) return;
   } catch {
     /* absent or unreadable: write it */
   }
   writeFileAtomic(path, content, mode);
+}
+
+export function writeJsonAtomic(path: string, value: unknown, mode?: number): void {
+  writeTextIfChanged(path, json(value), mode);
 }
 
 /** Copies `src` over `dest` via a temp file, so a reader never sees a partial copy. */

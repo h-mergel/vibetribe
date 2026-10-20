@@ -6,7 +6,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 const distro = process.argv[2] ?? "Ubuntu";
-const user = process.argv[3] ?? "heinrich";
+const user = process.argv[3] ?? process.env.USER ?? "h2k";
 
 function time(label, fn) {
   const t0 = performance.now();

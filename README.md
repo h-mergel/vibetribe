@@ -104,21 +104,33 @@ A small **reporter** hooks into Claude Code via hooks and a statusline passthrou
 | `hub` | the hub: ingress, session sources, usage, remote |
 | `plugin` | Stream Deck adapter, jump, composition root |
 
-Architecture: ports & adapters, dependencies point inward only (`plugin → render → core`). Decisions are recorded in [`docs/adr/`](docs/adr/).
+Architecture: ports & adapters, dependencies point inward only (`plugin → render → core`; the plugin also imports `@vibetribe/reporter/setup`, [ADR 0011](docs/adr/0011-einrichtung-aus-dem-plugin.md)). Decisions are recorded in [`docs/adr/`](docs/adr/).
 
 ## Requirements
 
-- Windows 10 or later (tested on Windows 11), optionally WSL2 (Ubuntu)
+- Windows 10 or later (tested on Windows 11), optionally WSL2 with any distribution
 - Stream Deck app 7.1 or later (tested with 7.6) and a **Stream Deck MK.2**
-- Node.js ≥ 24 and pnpm 10.33
 - Claude Code and/or Claude Desktop, signed in, with `claude.exe` on your `PATH`
+- For sessions in WSL: Node.js 20 or later inside WSL, on the login `PATH` (`~/.profile`) – older `apt` packages (Ubuntu 22.04: 12, 24.04: 18) are too old
+- Only to build from source: Node.js ≥ 24 and pnpm 10.33
 
 > [!NOTE]
 > Linux and macOS are not supported. Remote sessions from other machines still show up – through your account's session list.
 
+## Install from the Marketplace
+
+1. In the Stream Deck app, open the **Marketplace**, search for **VibeTribe** and install it (free; once it is listed).
+2. Drag the actions of the category **VibeTribe** onto your keys – Status, Inbox, 5h, Week, Extra and as many Session slots as you like (see [Layout and keys](#layout-and-keys)).
+3. Click any VibeTribe key in the Stream Deck app. Under **Claude Code hooks**, click **Set up hooks**. Until you do, the status key shows `Setup`.
+4. Sessions in WSL? Click **Set up in WSL** in the same place (it appears once VibeTribe has found your default WSL distribution). It needs Node.js 20 or later inside WSL; if it is missing or too old, the settings say so.
+
+Nothing changes on your machine before that click. Setup adds 15 hook events and a statusline passthrough to `~/.claude/settings.json` – with a backup next to it (`settings.json.vibetribe-<time>.bak`), atomically and idempotently; other entries and your own statusline keep working. It also writes the reporter (`reporter.mjs`) and a copy of Stream Deck's Node.js that runs it (`node-<version>.exe`, about 90 MB) to `%USERPROFILE%\.vibetribe`, because Stream Deck's own Node.js moves with every app update. Claude Code sessions report to VibeTribe as soon as they pick up the new settings; restart a session that stays missing.
+
+After a plugin update the status key may show `Setup` again: click **Update hooks**.
+
 ## Install from source
 
-There is no release package or Marketplace listing yet. Run every command in WSL, inside the repo.
+For development. Run every command in WSL, inside the repo.
 
 > [!WARNING]
 > Every step changes your real machine (`settings.json`, Stream Deck plugins, profiles). Run them deliberately.
@@ -163,8 +175,9 @@ Without `--write` you only get a preview. `--write` refuses while `StreamDeck.ex
 <details>
 <summary><b>Uninstall</b></summary>
 
-- **Hooks:** `node …\reporter.mjs setup --uninstall` (per host) removes only VibeTribe's own entries and restores your previous statusline.
-- **Plugin:** with the app closed, delete `%APPDATA%\Elgato\StreamDeck\Plugins\dev.h2k.vibetribe.sdPlugin`; optionally `%USERPROFILE%\.vibetribe` and `%APPDATA%\vibetribe`.
+- **Hooks:** click **Remove hooks** (and **Remove from WSL**) in the settings of any VibeTribe key, before you remove the plugin. Without the plugin, in PowerShell: `& (Get-Item "$env:USERPROFILE\.vibetribe\node-*.exe")[0] "$env:USERPROFILE\.vibetribe\reporter.mjs" setup --uninstall`; in WSL: `node ~/.vibetribe/reporter.mjs setup --uninstall`. Either removes only VibeTribe's own entries and restores your previous statusline.
+- **Files:** removing the hooks leaves the reporter, the Node.js copy and the token in place. Delete `%USERPROFILE%\.vibetribe` (and `~/.vibetribe` in WSL) afterwards if you want them gone.
+- **Plugin:** uninstall it in the Stream Deck app. From source: with the app closed, delete `%APPDATA%\Elgato\StreamDeck\Plugins\dev.h2k.vibetribe.sdPlugin`; optionally `%USERPROFILE%\.vibetribe` and `%APPDATA%\vibetribe`.
 - **Profile layout:** restore from the `.bak` files or your own backup.
 
 </details>
@@ -178,7 +191,7 @@ Environment variables only take effect after a full restart of the Stream Deck a
 | `VIBETRIBE_VARIANT` | `comfortable` | `comfortable` (larger type) or `compact` (more detail) |
 | `VIBETRIBE_MAX_FRAMES` | `10` | frames per second for the whole plugin (1–100) |
 | `VIBETRIBE_PORT` | `43710` | first hub port; if it is taken, the hub falls back to `37710`, `31710`, `25710` |
-| `VIBETRIBE_WSL_DISTRO` | `Ubuntu` | WSL distribution |
+| `VIBETRIBE_WSL_DISTRO` | WSL's default distribution | WSL distribution; `none` turns WSL off |
 | `VIBETRIBE_WSL_USER` | detected | WSL user |
 
 *Prefer pinned sessions* is a checkbox in the settings of the session slot action in the Stream Deck app; it applies to all slots at once and takes effect immediately.
@@ -215,12 +228,14 @@ Logs live in `%APPDATA%\vibetribe\logs\` (rotated, never containing tokens).
 </tr>
 </table>
 
+**What is written:** only your click in the key settings changes `~/.claude/settings.json` (see [Install from the Marketplace](#install-from-the-marketplace)). On its own, the plugin writes only to its folders: the token and the port file in `%USERPROFILE%\.vibetribe`, logs and caches in `%APPDATA%\vibetribe`.
+
 The hub listens on `127.0.0.1` only, rejects browser requests and requires a bearer token for write endpoints (32 random bytes, readable by the owner only). Hooks fail open: they never make Claude Code fail – the reporter gives up after 300 ms (hook timeout 2 s).
 
 ## Limitations
 
-- Windows only (with optional WSL); no release package, install from source.
-- Usage, the session list and Claude Desktop's own files are **undocumented** and may break at any time (Claude Desktop already moved its data folder once). The deck shows outages calmly as `As of 14:32`, `Sign in` or `Offline`; the hub checks its local assumptions every hour and logs a `drift:` line when one breaks. After updates of Claude Desktop, Claude Code, Windows or WSL, run `pnpm drift`.
+- Windows only (with optional WSL).
+- Usage, the session list and Claude Desktop's own files are **undocumented** and may break at any time (Claude Desktop already moved its data folder once). The deck shows outages calmly as `As of 14:32`, `Sign in` or `Offline`; the hub checks its local assumptions every hour and logs a `drift:` line when one breaks. From source, run `pnpm drift` after updates of Claude Desktop, Claude Code, Windows or WSL.
 - Remote sessions are coarser: no tool name, no background jobs, no distinction between approval and question, up to 20 s delay. Once you have read a remote turn, it no longer counts as waiting – unless Claude is still running.
 - Pins only work for sessions in Claude Desktop's Code tab; pinned remote or cloud sessions are not read.
 - A session that is already open in Claude Desktop when it finishes stays `Done` until you jump to it from the deck or click another session and back.
@@ -233,18 +248,19 @@ The hub listens on `127.0.0.1` only, rejects browser requests and requires a bea
 |---|---|---|
 | The VibeTribe actions don't appear | The Stream Deck app hasn't loaded the plugin | Quit the app completely (tray icon too) and start it again – `streamdeck://plugins/restart/…` doesn't work outside developer mode |
 | `Port in use` on the status key | None of the four ports (43710, 37710, 31710, 25710) is free – e.g. WSL's mirrored networking reserves a moving block of ports, or a standalone `hub.mjs` runs | The plugin retries every 5 s on its own. `pnpm drift` shows which ports are blocked; stop the other process if there is one |
-| Pins or "opened in Claude Desktop" stopped working | Claude Desktop changed its files with an update | Run `pnpm drift`; a `changed:` line names what moved |
-| `No token` on the status key | The reporter token is missing | Run `reporter.mjs setup` on Windows first, then in WSL |
+| Pins or "opened in Claude Desktop" stopped working | Claude Desktop changed its files with an update | `plugin.log` has a `drift:` line naming what moved; please open an issue. From source, `pnpm drift` checks every assumption |
+| `Setup` on the status key | Claude Code's hooks are not set up yet, or they are older than the plugin | Click a VibeTribe key in the Stream Deck app, then **Set up hooks** or **Update hooks** |
+| `No token` on the status key | The plugin could not create `%USERPROFILE%\.vibetribe\token` | See `plugin.log`; check that the folder is writable |
 | `Sign in` on the limit keys | The Claude login is missing or expired | Sign in to Claude Code; make sure `where.exe claude` finds the CLI so the token can be refreshed |
 | `As of 14:32` | The last usage data is older than 15 min | Usually temporary; short-press the key to refresh (at most every 120 s) |
 | A slot shows `No link` | The session has no deep link (e.g. CLI in a terminal) | Expected – only sessions Claude Desktop knows can be opened |
-| Sessions from WSL are missing | The status key shows `WSL` as stale or down | Check `VIBETRIBE_WSL_DISTRO` / `VIBETRIBE_WSL_USER`, and that `setup` ran inside WSL |
+| Sessions from WSL are missing | WSL is not set up, or your sessions run in another distribution | Click **Set up in WSL**; VibeTribe follows your default distribution (`wsl -l -v`, marked `*`), or set `VIBETRIBE_WSL_DISTRO` |
 
 Hold the status key to open the debug page at `http://127.0.0.1:<port>/debug` (the port is in `%USERPROFILE%\.vibetribe\port`, usually `43710`); logs are in `%APPDATA%\vibetribe\logs\`.
 
 ## Roadmap
 
-- [ ] Release package via `streamdeck pack` instead of deploy-by-copy
+- [x] Release package via `pnpm plugin:pack` (`streamdeck pack`)
 - [ ] Stream Deck Marketplace listing
 - [ ] Optional agent for macOS machines
 

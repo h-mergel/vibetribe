@@ -154,31 +154,30 @@ describe("findTokenFile", () => {
   const none = () => false;
 
   it("prefers the token in the home directory and does not look at Windows users", () => {
-    const listUsers = vi.fn(() => ["Heinrich"]);
+    const listUsers = vi.fn(() => ["h2k"]);
     const path = findTokenFile({
-      home: "/home/heinrich",
+      home: "/home/h2k",
       wsl: true,
       listUsers,
-      exists: (p) => p === "/home/heinrich/.vibetribe/token",
+      exists: (p) => p === "/home/h2k/.vibetribe/token",
     });
-    expect(path).toBe("/home/heinrich/.vibetribe/token");
+    expect(path).toBe("/home/h2k/.vibetribe/token");
     expect(listUsers).not.toHaveBeenCalled();
   });
 
   it("finds the first Windows user's token from WSL", () => {
     const path = findTokenFile({
-      home: "/home/heinrich",
+      home: "/home/h2k",
       wsl: true,
-      listUsers: () => ["Public", "Heinrich", "Other"],
+      listUsers: () => ["Public", "h2k", "Other"],
       exists: (p) =>
-        p === "/mnt/c/Users/Heinrich/.vibetribe/token" ||
-        p === "/mnt/c/Users/Other/.vibetribe/token",
+        p === "/mnt/c/Users/h2k/.vibetribe/token" || p === "/mnt/c/Users/Other/.vibetribe/token",
     });
-    expect(path).toBe("/mnt/c/Users/Heinrich/.vibetribe/token");
+    expect(path).toBe("/mnt/c/Users/h2k/.vibetribe/token");
   });
 
   it("does not search Windows users outside WSL", () => {
-    const listUsers = vi.fn(() => ["Heinrich"]);
+    const listUsers = vi.fn(() => ["h2k"]);
     expect(() =>
       findTokenFile({ home: "/home/x", wsl: false, listUsers, exists: () => true }),
     ).not.toThrow();
@@ -187,7 +186,7 @@ describe("findTokenFile", () => {
 
   it("fails with a hint when no token exists", () => {
     expect(() =>
-      findTokenFile({ home: "/home/x", wsl: true, listUsers: () => ["Heinrich"], exists: none }),
+      findTokenFile({ home: "/home/x", wsl: true, listUsers: () => ["h2k"], exists: none }),
     ).toThrow("token not found – pass --token-file /mnt/c/Users/<you>/.vibetribe/token");
   });
 });

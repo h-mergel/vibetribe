@@ -10,7 +10,7 @@ const base: SessionView = {
   hostKind: "wsl",
   badge: "WSL",
   title: "Mobile Entwicklung Northwind",
-  cwd: "/home/heinrich/dev/projects/acme",
+  cwd: "/home/h2k/dev/projects/acme",
   state: "idle",
   detail: null,
   errorType: null,

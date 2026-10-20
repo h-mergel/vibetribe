@@ -5,6 +5,7 @@ import {
   INGRESS_PORT_PREFIX,
   INGRESS_TOKEN_MESSAGE,
   REMOTE_SOURCE,
+  SETUP_SOURCE,
 } from "@vibetribe/hub";
 import {
   extraTile,
@@ -65,10 +66,13 @@ function healthOf(state: HubState, matches: (name: string) => boolean): SourceHe
   return worst ?? "off";
 }
 
-/** Short English alert for the status key (≤ 11 chars, handoff); null when the ingress is fine. */
+/**
+ * Short English alert for the status key (≤ 11 chars, handoff): the ingress first, then hooks
+ * that are not set up; null when both are fine.
+ */
 export function statusAlert(state: HubState): string | null {
   const error = state.sources.ingress?.error;
-  if (!error) return null;
+  if (!error) return state.sources[SETUP_SOURCE]?.error ? "Setup" : null;
   if (error.startsWith(INGRESS_PORT_PREFIX)) return "Port in use";
   if (error.includes(INGRESS_TOKEN_MESSAGE)) return "No token";
   return "Error";

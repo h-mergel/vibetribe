@@ -1,11 +1,21 @@
-import { chmodSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, join } from "node:path";
 import { loadConfig, type ReporterConfig, vibetribeDir } from "../config";
-import { copyFileAtomic, writeJsonAtomic, writeJsonWithBackup } from "./fsops";
+import { copyFileAtomic, writeJsonAtomic, writeJsonWithBackup, writeTextIfChanged } from "./fsops";
 import {
   applyHooks,
   applyStatusline,
   isOurStatusline,
+  ourHookCommands,
   type ReporterCommand,
   removeHooks,
   removeStatusline,
@@ -19,9 +29,15 @@ export interface SetupEnv {
   /** Linux only: running inside WSL */
   wsl: boolean;
   nodePath: string;
-  /** path of the running reporter bundle, copied to ~/.vibetribe/reporter.mjs */
-  selfPath: string;
-  /** WSL only: the Windows home as a Linux path, e.g. /mnt/c/Users/Heinrich */
+  /**
+   * Windows: the hooks run a copy of `nodePath`, ~/.vibetribe/node-<version>.exe, instead of
+   * `nodePath` itself (Stream Deck's Node moves to a new folder with its updates). `version` is
+   * that Node's `process.versions.node`.
+   */
+  copyNode?: { version: string };
+  /** the reporter bundle's text, written to ~/.vibetribe/reporter.mjs */
+  reporterSource: string;
+  /** WSL only: the Windows home as a Linux path, e.g. /mnt/c/Users/<name> */
   windowsHome: string | null;
   now: Date;
   randomToken?: () => string;
@@ -32,7 +48,7 @@ export interface SetupEnv {
 export class SetupError extends Error {}
 
 const slashes = (p: string): string => p.replaceAll("\\", "/");
-const settingsPath = (home: string): string => join(home, ".claude", "settings.json");
+export const settingsPath = (home: string): string => join(home, ".claude", "settings.json");
 const oneLine = (s: string): string => s.replace(/\s+/g, " ");
 
 function randomHex(): string {
@@ -45,7 +61,7 @@ function randomHex(): string {
  * null = no settings.json; an empty file or one with only a BOM is `{}`.
  * Anything else that is not a JSON object aborts: we must not overwrite it.
  */
-function readSettings(path: string): Settings | null {
+export function readSettings(path: string): Settings | null {
   if (!existsSync(path)) return null;
   let text = readFileSync(path, "utf8");
   if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
@@ -76,21 +92,48 @@ function tokenPathOf(e: SetupEnv, dir: string): string {
   return winToken;
 }
 
-/** Windows: create the token (owner-only), keep an existing one, replace an empty one. */
-function ensureToken(e: SetupEnv, tokenPath: string): void {
-  if (e.platform === "linux") return;
-  const token = (e.randomToken ?? randomHex)();
+/**
+ * Windows: creates the hub token (owner-only) with its folder, keeps an existing one, replaces an
+ * empty one; returns the token. Never logs its value.
+ */
+export function ensureToken(
+  tokenPath: string,
+  log: (line: string) => void,
+  randomToken: () => string = randomHex,
+): string {
+  mkdirSync(dirname(tokenPath), { recursive: true });
+  const token = randomToken();
   try {
     writeFileSync(tokenPath, token, { mode: 0o600, flag: "wx" });
-    e.log(`created token ${tokenPath}`);
-    return;
+    log(`created token ${tokenPath}`);
+    return token;
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
   }
-  if (readFileSync(tokenPath, "utf8").trim() !== "") return;
+  const existing = readFileSync(tokenPath, "utf8").trim();
+  if (existing !== "") return existing;
   writeFileSync(tokenPath, token, { mode: 0o600 });
   chmodSync(tokenPath, 0o600);
-  e.log(`token ${tokenPath} was empty, created a new one`);
+  log(`token ${tokenPath} was empty, created a new one`);
+  return token;
+}
+
+const NODE_COPY = /^node-.+\.exe$/;
+
+/**
+ * Removes the copies no settings entry points at. The previous one stays: Claude Code sessions
+ * started before this setup keep running it. A copy a running hook still uses cannot be removed on
+ * Windows either; it stays until a later setup.
+ */
+function removeOtherNodes(dir: string, keep: string[]): void {
+  for (const name of readdirSync(dir)) {
+    if (!NODE_COPY.test(name) || keep.includes(name)) continue;
+    try {
+      rmSync(join(dir, name));
+    } catch {
+      // in use or not ours to remove: the next setup tries again
+    }
+  }
 }
 
 /**
@@ -111,8 +154,13 @@ export function install(e: SetupEnv): void {
   const dir = vibetribeDir(e.home);
   const reporter = join(dir, "reporter.mjs");
   const tokenPath = tokenPathOf(e, dir);
+  const nodeCopy = e.copyNode ? `node-${e.copyNode.version}.exe` : null;
+  const node = nodeCopy ? join(dir, nodeCopy) : e.nodePath;
+  const previousCopies = (ourHookCommands(before) ?? []).map((c) =>
+    c.slice(c.lastIndexOf("/") + 1),
+  );
 
-  const cmd: ReporterCommand = { node: slashes(e.nodePath), reporter: slashes(reporter) };
+  const cmd: ReporterCommand = { node: slashes(node), reporter: slashes(reporter) };
   let settings: Settings;
   let previous: ReturnType<typeof applyStatusline>["previous"];
   try {
@@ -134,9 +182,15 @@ export function install(e: SetupEnv): void {
 
   // first write: from here on the user's machine changes
   mkdirSync(dir, { recursive: true });
-  if (resolve(e.selfPath) !== resolve(reporter)) copyFileAtomic(e.selfPath, reporter);
-  ensureToken(e, tokenPath);
-  e.log(`node: ${cmd.node} (run setup again if this node installation moves)`);
+  writeTextIfChanged(reporter, e.reporterSource);
+  // a copy that exists is never replaced: Windows locks it while a hook runs it
+  if (nodeCopy && !existsSync(node)) copyFileAtomic(e.nodePath, node);
+  if (e.platform !== "linux") ensureToken(tokenPath, e.log, e.randomToken);
+  e.log(
+    e.copyNode
+      ? `node: ${cmd.node} (copy of ${slashes(e.nodePath)})`
+      : `node: ${cmd.node} (run setup again if this node installation moves)`,
+  );
   if (recorded && e.platform === "win32" && !gitBash)
     e.log("warning: Git Bash not found; the previous statusline will run via the default shell");
   const config: ReporterConfig = {
@@ -146,12 +200,12 @@ export function install(e: SetupEnv): void {
   };
   writeJsonAtomic(join(dir, "config.json"), config, 0o600);
 
-  if (JSON.stringify(settings) === JSON.stringify(before)) {
-    e.log(`${path}: unchanged`);
-    return;
+  if (JSON.stringify(settings) === JSON.stringify(before)) e.log(`${path}: unchanged`);
+  else {
+    const backup = writeJsonWithBackup(path, settings, e.now);
+    e.log(`${path}: hooks and statusline installed${backup ? ` (backup ${backup})` : ""}`);
   }
-  const backup = writeJsonWithBackup(path, settings, e.now);
-  e.log(`${path}: hooks and statusline installed${backup ? ` (backup ${backup})` : ""}`);
+  if (nodeCopy) removeOtherNodes(dir, [nodeCopy, ...previousCopies]);
 }
 
 export function uninstall(e: SetupEnv): void {

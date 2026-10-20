@@ -58,6 +58,8 @@ export interface RunningHub {
    * the last attempt started; otherwise polls now and reschedules the regular poll from now.
    */
   pollNow(): PollNowResult;
+  /** Starts scanning one more source, e.g. WSL once its distribution is known; not after stop. */
+  addSource(src: SessionSource): void;
   stop(): Promise<void>;
 }
 
@@ -282,6 +284,9 @@ export async function startHub(c: HubConfig): Promise<RunningHub> {
       return listener.port;
     },
     pollNow: () => pollNow(),
+    addSource: (src) => {
+      if (!stopped) void scanLoop(src);
+    },
     stop: async () => {
       stopped = true;
       for (const t of timers) clearTimeout(t);

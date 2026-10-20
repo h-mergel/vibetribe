@@ -18,6 +18,7 @@
     "hub:simulate": "tsx packages/hub/scripts/simulate.ts",
     "plugin:build": "pnpm --filter @vibetribe/plugin build",
     "plugin:deploy": "pnpm plugin:build && bash packages/plugin/scripts/deploy.sh",
+    "plugin:pack": "pnpm plugin:build && bash packages/plugin/scripts/pack.sh && tsx packages/plugin/scripts/marketplace-media.ts dist/marketplace",
     "plugin:headless": "tsx packages/plugin/src/headless.ts",
     "deck:render": "tsx packages/plugin/scripts/render-scenario.ts",
     "profile:layout": "tsx packages/plugin/scripts/profile-files.ts",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
+    "@elgato/cli": "^1.10.3",
     "@types/node": "^24",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",

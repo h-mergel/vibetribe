@@ -19,6 +19,7 @@ import {
   FALLBACK_PORTS,
   readHubToken,
   windowsHubConfig,
+  wslDistro,
 } from "../src/compose";
 import { runClaudeVersion } from "../src/usage/cli";
 
@@ -94,7 +95,7 @@ describe("windowsHubConfig", () => {
   const noExe = () => null;
   const neverAnswers = () => new Promise<string>(() => {});
 
-  it("without a token wires both sources and usage, closes the ingress with a random token, and does not await the claude lookup", async () => {
+  it("without a token wires the Windows source and usage, closes the ingress with a random token, and does not await the claude lookup", async () => {
     const home = temp();
     const lines: string[] = [];
     const started = Date.now();
@@ -112,12 +113,42 @@ describe("windowsHubConfig", () => {
     expect(config.token).toMatch(/^[0-9a-f-]{36}$/);
     expect(config.port).toBe(43710);
     expect(config.fallbackPorts).toEqual(FALLBACK_PORTS);
-    expect(config.sources.map((s) => s.name)).toEqual(["sessions:win", "sessions:wsl:Ubuntu"]);
+    expect(config.sources.map((s) => s.name)).toEqual(["sessions:win"]);
     expect(config.usage).not.toBeNull();
-    expect(summary).toMatch(/^sources sessions:win, sessions:wsl:Ubuntu, sessions:remote, claude /);
+    expect(summary).toMatch(/^sources sessions:win, sessions:remote, claude /);
     expect(config.remote?.ports.fetchSessions).toBeTypeOf("function");
     expect(summary).toContain("C:\\bin\\claude.exe");
     expect(lines).toEqual(["ignoring invalid VIBETRIBE_PORT, using 43710"]);
+  });
+
+  it("builds the WSL source only when asked, for the distribution found later", async () => {
+    const { config, wslSource } = await windowsHubConfig({
+      log: () => {},
+      home: temp(),
+      env: {},
+      token: "abc",
+      findExe: noExe,
+    });
+    expect(config.sources.map((s) => s.name)).toEqual(["sessions:win"]);
+    const wsl = wslSource("Debian");
+    expect([wsl.name, wsl.host, wsl.hostKind]).toEqual([
+      "sessions:wsl:Debian",
+      "wsl:Debian",
+      "wsl",
+    ]);
+  });
+
+  it("wslDistro takes VIBETRIBE_WSL_DISTRO, else WSL's default distribution; none switches WSL off", async () => {
+    let asked = 0;
+    const found = async () => {
+      asked++;
+      return "Debian";
+    };
+    expect(await wslDistro({ VIBETRIBE_WSL_DISTRO: "Ubuntu" }, found)).toBe("Ubuntu");
+    expect(await wslDistro({ VIBETRIBE_WSL_DISTRO: "none" }, found)).toBeNull();
+    expect(asked).toBe(0);
+    expect(await wslDistro({}, found)).toBe("Debian");
+    expect(await wslDistro({ VIBETRIBE_WSL_DISTRO: "" }, async () => null)).toBeNull();
   });
 
   it("uses a given token verbatim", async () => {

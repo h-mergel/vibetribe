@@ -1,6 +1,6 @@
 import type { HookEnvelope, StatuslineEnvelope } from "@vibetribe/protocol";
 import { describe, expect, it } from "vitest";
-import { Hub } from "../src/hub";
+import { Hub, SETUP_SOURCE } from "../src/hub";
 
 const source = {
   host: "wsl:Ubuntu",
@@ -142,6 +142,30 @@ describe("Hub", () => {
     expect(later.ingress?.health).toBe("ok");
     expect(later.usage?.health).toBe("ok");
     expect(hub.state(15 * 60_000 + 1).sources.usage?.health).toBe("stale");
+  });
+
+  it("the setup source never goes stale and carries its error until marked ok", () => {
+    const hub = new Hub();
+    hub.markError(SETUP_SOURCE, "Claude Code hooks not set up");
+    expect(hub.state(0).sources.setup).toMatchObject({ health: "missing" });
+    hub.markOk(SETUP_SOURCE, 0);
+    expect(hub.state(24 * 3_600_000).sources.setup).toEqual({
+      health: "ok",
+      lastAt: 0,
+      error: null,
+    });
+  });
+
+  it("tells the listeners when a source recovers, not on every ok", () => {
+    const hub = new Hub();
+    let changes = 0;
+    hub.onChange(() => changes++);
+    hub.markOk(SETUP_SOURCE, 0);
+    hub.markOk(SETUP_SOURCE, 1);
+    expect(changes).toBe(0);
+    hub.markError(SETUP_SOURCE, "Claude Code hooks not set up");
+    hub.markOk(SETUP_SOURCE, 2);
+    expect(changes).toBe(2);
   });
 
   it("counts invalid envelopes and exposes them in the state", () => {
