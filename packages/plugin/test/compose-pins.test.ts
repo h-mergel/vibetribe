@@ -1,7 +1,8 @@
 import type { HostSnapshot } from "@vibetribe/core";
 import type { SessionSource } from "@vibetribe/hub";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MemorySurface, type RunningVibeTribe, startVibeTribe } from "../src/compose";
+import { type RunningVibeTribe, startVibeTribe } from "../src/compose";
+import { MemorySurface } from "../src/memory-surface";
 import { svgFromDataUrl } from "./helpers";
 
 let app: RunningVibeTribe | null = null;

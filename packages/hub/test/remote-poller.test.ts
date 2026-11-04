@@ -16,7 +16,16 @@ const creds = (expiresAt = 10 ** 15, accessToken = "supersecret"): Credentials =
 });
 const waiting: RemoteResult = {
   kind: "ok",
-  sessions: [{ id: "session_01A", title: "Mac", status: "waiting", doneUnread: false, at: null }],
+  sessions: [
+    {
+      id: "session_01A",
+      title: "Mac",
+      status: "waiting",
+      doneUnread: false,
+      quiet: true,
+      at: null,
+    },
+  ],
 };
 
 function setup(

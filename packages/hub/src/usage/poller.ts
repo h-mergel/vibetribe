@@ -52,7 +52,7 @@ export class UsagePoller {
   async poll(now: number): Promise<number> {
     let creds = await this.#ports.readCredentials();
     if (!creds) {
-      this.#hub.markError("usage", "no credentials");
+      this.#hub.usageExpired("no credentials");
       return POLL_MS;
     }
     if (creds.expiresAt - now <= REFRESH_AHEAD_MS) {

@@ -7,7 +7,7 @@ Stand: main `deb4529`. Quelle der Wahrheit ist der Code; Abweichungen der Doku s
 - VibeTribe ist ein Stream-Deck-Plugin (Elgato MK.2, 15 Tasten), das alle Claude-Code-Sessions eines Entwicklers auf einem Deck zeigt: lokal unter Windows, in WSL, im Code-Tab von Claude Desktop und Remote-Control-Sessions auf anderen Rechnern. Dazu 5h-Limit, Wochenlimit und Extra Usage.
 - Kernwert: **Wer braucht mich, seit wann, ein Druck springt hin.** Jede Kachel zeigt Zustand, Wartezeit und Herkunft; ein Tastendruck öffnet die Session in Claude Desktop.
 - Das Plugin ist selbst die Zentrale (Hub im Plugin-Prozess, `127.0.0.1`, Port 43710 oder ein Ersatzport); kein separater Dienst nötig.
-- Status: in Entwicklung, läuft auf dem Gerät des Autors; Autor/Namespace `h2k.dev`, Plugin-UUID `dev.h2k.vibetribe`, Version `1.0.0.0` (erste Marketplace-Fassung, kostenlos).
+- Status: in Entwicklung, läuft auf dem Gerät des Autors; Autor/Namespace `h2k.dev`, Plugin-UUID `dev.h2k.vibetribe`, Version `1.0.1.0` (erste Marketplace-Fassung, kostenlos).
 
 ## 2. Funktionen für Nutzer
 
@@ -38,9 +38,9 @@ Stand: main `deb4529`. Quelle der Wahrheit ist der Code; Abweichungen der Doku s
 - Start über `rundll32` mit streng geprüftem Link; Plugin sieht nicht, ob Desktop wirklich nach vorne kommt.
 
 **Limits**
-- 5h- und Wochen-Kachel: Verbrauch in %, Balken, Tempo-Markierung („amber ahead“), Reset-Zeit (`3d 4h`), Notizen `Sign in`, `No data`, `New window`, `As of HH:MM` (Daten > 15 min alt). Kurz drücken lädt neu (höchstens alle 120 s). Abfrage alle 5 min, Backoff bis 30 min.
+- 5h- und Wochen-Kachel: Verbrauch in %, Balken, Tempo-Markierung („amber ahead“), Reset-Zeit (`3d 4h`), Notizen `Sign in`, `No data`, `New window`, `As of HH:MM` (Daten > 15 min alt). Kurz drücken lädt neu (höchstens alle 120 s); bei `Sign in` öffnet es stattdessen die Anleitung (`README#sign-in`). Abfrage alle 5 min, Backoff bis 30 min.
 - Extra-Usage-Kachel: verbrauchter Betrag und Anteil am Monatslimit; ohne Limit `No limit`. Inaktiv mit Grund: `No credit` (out_of_credits), `Limit hit` (Ausgabenlimit erreicht), `Disabled` (vom Nutzer abgeschaltet), `Inactive` (sonst); Vorrang in dieser Reihenfolge: Disabled > Limit hit > No credit. Daten > 10 min alt: `As of HH:MM`.
-- Extra-Taste (kurz): öffnet `https://claude.ai/settings/usage` im Browser; lang: nichts.
+- Extra-Taste (kurz): öffnet `https://claude.ai/settings/usage` im Browser, bei `Sign in` die Anleitung; lang: nichts.
 
 **Status-Kachel**
 - Ruhig `Sources ok`, sonst nur Störungen. Quellen: `WIN`, `WSL`, `REM`, `LIM`; Zustände ok/stale/down/off. Alarme: `Port in use`, `Setup` (Hooks fehlen oder sind veraltet), `No token` (Token-Datei fehlt), `Error`.
@@ -64,8 +64,8 @@ Extra   | Slot 1 | Slot 2 | Slot 3 | Slot 4
 Page 2  | Slot 5 | Slot 6 | Slot 7 | Slot 8
 ```
 - Fremdtasten (Apps, Seite wechseln, Medien, Mikro) sind Elgato-/Fremdaktionen, nicht Teil von VibeTribe.
-- Aktionen im Manifest (Kategorie „VibeTribe“, alle Keypad, nicht in Multi-Actions): `dev.h2k.vibetribe.slot` (Session-Slot), `.inbox`, `.limit-5h`, `.limit-week`, `.extra`, `.status`.
-- Tasten: Slot kurz = Sprung, lang = quittieren. Inbox kurz = nächste Session, lang = Done quittieren. 5h/Week kurz = Limit neu laden. Extra kurz = Usage-Einstellungen. Status kurz = Quellen, lang = Debug-Seite.
+- Aktionen im Manifest (Kategorie „VibeTribe“, alle Keypad, nicht in Multi-Actions): `dev.h2k.vibetribe.slot` (Session-Slot), `.inbox`, `.limit-5h`, `.limit-week`, `.extra`, `.status`, `.home` (Live-Taste „VibeTribe“, im mitgelieferten Profil als `Back`).
+- Tasten: Slot kurz = Sprung, lang = quittieren. Inbox kurz = nächste Session, lang = Done quittieren. 5h/Week kurz = Limit neu laden. Extra kurz = Usage-Einstellungen. Alle drei bei `Sign in` kurz = Anleitung im Browser. Status kurz = Quellen, lang = Debug-Seite.
 - Lange Taste = ≥ 600 ms.
 
 ## 4. Voraussetzungen
@@ -80,7 +80,7 @@ Page 2  | Slot 5 | Slot 6 | Slot 7 | Slot 8
 ## 5. Installation aus dem Marketplace
 
 1. In der Stream-Deck-App im Marketplace „VibeTribe“ installieren (kostenlos).
-2. Aktionen der Kategorie „VibeTribe“ auf Tasten ziehen.
+2. Die Aktion „VibeTribe“ aufs Hauptprofil ziehen; ein Druck öffnet das mitgelieferte Profil. Alternativ die Aktionen einzeln auf Tasten ziehen.
 3. Eine VibeTribe-Taste in der App anklicken, unter „Claude Code hooks“ **Set up hooks** wählen. Bis dahin zeigt die Status-Taste `Setup`. Vorher ändert das Plugin nichts an `~/.claude/settings.json`.
 4. Sessions in WSL: **Set up in WSL** an derselben Stelle (braucht Node.js 20 oder neuer im Login-`PATH` von WSL).
 
@@ -96,9 +96,9 @@ Alle Befehle in WSL im Repo (Repo liegt in WSL; kein pnpm/node unter Windows im 
    - Windows: `node <UNC-Pfad>\packages\reporter\dist\reporter.mjs setup` (Pfad `\\wsl.localhost\Ubuntu\home\<user>\…\vibetribe\…`) – legt `%USERPROFILE%\.vibetribe\{reporter.mjs,config.json,token}` an (Token 32 Byte hex, nur Besitzer).
    - WSL: `node packages/reporter/dist/reporter.mjs setup [--windows-home /mnt/c/Users/<name>]` – nutzt den Windows-Token (muss existieren).
    - `setup` ändert `~/.claude/settings.json`: 15 Hook-Ereignisse (SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, Notification, Elicitation, ElicitationResult, Stop, StopFailure, SubagentStart, SubagentStop, PreCompact, SessionEnd) plus Statusline-Weiche, die eine vorhandene Statusline weiterreicht. Backup, atomar, idempotent, fremde Einträge bleiben, ungültiges JSON wird nie überschrieben.
-3. Plugin bauen und ausrollen: `pnpm plugin:deploy` (baut, kopiert `manifest.json`, `bin/`, `imgs/` nach `%APPDATA%\Elgato\StreamDeck\Plugins\dev.h2k.vibetribe.sdPlugin`; gestaffelt mit Austausch und Rückfall, `logs/` bleibt unberührt).
+3. Plugin bauen und ausrollen: `pnpm plugin:deploy` (baut, kopiert `manifest.json`, `bin/`, `imgs/`, `profiles/`, `ui/` nach `%APPDATA%\Elgato\StreamDeck\Plugins\dev.h2k.vibetribe.sdPlugin`; gestaffelt mit Austausch und Rückfall, `logs/` bleibt unberührt).
 4. **Stream-Deck-App vollständig beenden und neu starten.** Die URL `streamdeck://plugins/restart/dev.h2k.vibetribe` wirkt ohne Entwicklermodus nicht; erste Installation braucht ebenfalls den Neustart.
-5. Tasten platzieren: in der Stream-Deck-App die sechs VibeTribe-Aktionen (Kategorie „VibeTribe“) auf Tasten ziehen, **oder** `pnpm profile:layout`:
+5. Tasten platzieren: in der Stream-Deck-App die VibeTribe-Aktionen (Kategorie „VibeTribe“) auf Tasten ziehen, **oder** `pnpm profile:layout`:
    - `pnpm profile:layout show <ProfilesV3>` zeigt Seiten und Tasten; `apply <ProfilesV3> <layout.json> [--write]` ordnet Seite 1 des MK.2-Profils um und schiebt fremde Tasten samt Bildern auf Seite 2.
    - Sicherheit: ohne `--write` nur Vorschau; fremde Tasten bleiben Byte für Byte; Abbruch statt Datenverlust; `--write` verweigert, solange `StreamDeck.exe` läuft; sichert beide Manifeste als `manifest.json.vibetribe-<zeit>.bak`; schreibt atomar (Seite 2 vor Seite 1), liest zurück und stellt bei Fehler wieder her. `--i-checked-streamdeck-is-closed` überstimmt nur „kann nicht prüfen“. Vorher `%APPDATA%\Elgato\StreamDeck\ProfilesV3` sichern. Profilordner heißt `ProfilesV3`.
 
@@ -131,7 +131,7 @@ Wirken nur nach vollständigem Neustart der Stream-Deck-App (unter Windows z. B.
 - OAuth-Token aus der Claude-Anmeldedatei: nur lesend, ausschließlich für zwei Abfragen an `api.anthropic.com`: Usage (`/api/oauth/usage`, alle 5 min) und Session-Liste (`/v1/code/sessions`, alle 20 s). VibeTribe erneuert Tokens nie selbst; bei Ablauf bittet es das installierte `claude`-CLI (höchstens einmal pro Stunde), die Anmeldedatei zu erneuern: nur `claude -p /cost`, kein Modellaufruf; das Log zeigt je Versuch `token refresh: ok` bzw. `token refresh: no change`.
 
 **Was die Maschine nie verlässt**
-- Hook-Ereignisse, Session-Titel, Arbeitsverzeichnisse, Session-Zustand, Tastenbilder, Logs. Einzige ausgehende Verbindungen: die zwei Anthropic-Abfragen oben (HTTPS, keine Weiterleitungen, Timeout 10 s) und das Öffnen von `claude.ai/settings/usage` im Browser. Keine Telemetrie, keine Prompts oder Inhalte irgendwohin gesendet.
+- Hook-Ereignisse, Session-Titel, Arbeitsverzeichnisse, Session-Zustand, Tastenbilder, Logs. Einzige ausgehende Verbindungen: die zwei Anthropic-Abfragen oben (HTTPS, keine Weiterleitungen, Timeout 10 s) und das Öffnen von `claude.ai/settings/usage` bzw. der Anleitung auf GitHub im Browser. Keine Telemetrie, keine Prompts oder Inhalte irgendwohin gesendet.
 
 **Zentrale**
 - Lauscht nur auf `127.0.0.1` (Standard Port 43710); prüft Peer (Loopback), `Host`-Header und lehnt Browser-Anfragen (`Origin`) ab.

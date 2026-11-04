@@ -2,9 +2,10 @@ import type { HostSnapshot } from "@vibetribe/core";
 import { DESKTOP_POLL_MS, type SessionSource } from "@vibetribe/hub";
 import type { HookEnvelope } from "@vibetribe/protocol";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MemorySurface, type RunningVibeTribe, startVibeTribe } from "../src/compose";
+import { type RunningVibeTribe, startVibeTribe } from "../src/compose";
 import { defaultMk2Layout } from "../src/deck/keys";
 import type { JumpOpener, JumpResult } from "../src/jump/opener";
+import { MemorySurface } from "../src/memory-surface";
 import { svgFromDataUrl } from "./helpers";
 
 let app: RunningVibeTribe | null = null;

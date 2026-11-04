@@ -29,6 +29,8 @@ export interface RemoteSession {
   status: FileStatus;
   /** finished a turn the user has not read on any device yet (done unseen) */
   doneUnread: boolean;
+  /** no worker runs: worker_status is missing or idle */
+  quiet: boolean;
   /** last_event_at in ms; null when missing or unparseable */
   at: number | null;
 }
@@ -113,6 +115,7 @@ export function mapRemoteSession(raw: unknown): RemoteSession | null {
     title: str(raw.title)?.trim().slice(0, MAX_TITLE) || "Remote",
     status,
     doneUnread: status === "idle" && finished && raw.unread === true,
+    quiet,
     at: Number.isFinite(at) ? at : null,
   };
 }

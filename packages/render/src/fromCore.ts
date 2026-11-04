@@ -3,6 +3,7 @@ import {
   type BackgroundKind,
   breathLevel,
   breathStepStart,
+  compareSeverity,
   type ExtraInactive,
   type ExtraView,
   frameWeight,
@@ -11,9 +12,10 @@ import {
   levelOf,
   type SessionView,
   type WindowView,
+  waitingInOrder,
 } from "@vibetribe/core";
 import { formatClock, formatDuration, formatMoney } from "./format";
-import type { ExtraTile, InboxTile, KeyFlash, LimitTile, SlotTile } from "./model";
+import type { ExtraTile, HomeTile, InboxTile, KeyFlash, LimitTile, SlotTile } from "./model";
 import { tileTitle } from "./title";
 
 export interface ClockContext {
@@ -126,6 +128,33 @@ export function inboxTile(s: InboxSummary, ctx: InboxContext): InboxTile {
     overflow: s.overflowCount,
     cycle: ctx.cycle ?? null,
     ...(ctx.flash ? { flash: ctx.flash } : {}),
+  };
+}
+
+/**
+ * The top dot belongs to the most urgent waiting session and stays free while nobody waits; the
+ * other sessions follow by severity. `animated` as in `slotTile`: the top dot breathes only when
+ * core lets its session breathe.
+ */
+export function homeTile(
+  views: SessionView[],
+  ctx: { now: number; animated: ReadonlySet<string> },
+): HomeTile {
+  const waiting = waitingInOrder(views);
+  const top = waiting[0] ?? null;
+  const since = top?.episodeSince ?? null;
+  return {
+    kind: "home",
+    top: top && {
+      state: top.state,
+      level: since !== null && ctx.animated.has(top.id) ? breathLevel(ctx.now, since) : 1,
+    },
+    others: [...views]
+      .sort(compareSeverity)
+      .filter((v) => v !== top)
+      .slice(0, 5)
+      .map((v) => v.state),
+    waiting: waiting.length,
   };
 }
 

@@ -19,16 +19,11 @@ import {
 } from "@vibetribe/hub";
 import { DEFAULT_PORT } from "@vibetribe/protocol";
 import type { Variant } from "@vibetribe/render";
-import {
-  MemorySurface,
-  parseMaxFrames,
-  parseVariant,
-  type RunningVibeTribe,
-  startVibeTribe,
-} from "./compose";
+import { parseMaxFrames, parseVariant, type RunningVibeTribe, startVibeTribe } from "./compose";
 import { defaultMk2Layout } from "./deck/keys";
 import type { PressKind } from "./deck/press";
 import { createLoggingOpener } from "./jump/opener";
+import { MemorySurface } from "./memory-surface";
 
 export const HEADLESS_PORT = 43799;
 

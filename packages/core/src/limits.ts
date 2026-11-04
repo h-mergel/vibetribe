@@ -11,7 +11,7 @@ export const EXTRA_INACTIVE = ["no_credit", "limit_reached", "disabled", "other"
 /** Why extra usage is not active; absent while it is enabled (or for old caches). */
 export type ExtraInactive = (typeof EXTRA_INACTIVE)[number];
 
-/** "expired": the usage endpoint rejected the login; the limit tiles ask to sign in. */
+/** "expired": the login is missing or was rejected; the limit tiles ask to sign in. */
 export type AuthState = "ok" | "expired";
 
 export interface ExtraInput {

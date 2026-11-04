@@ -38,6 +38,7 @@ beforeEach(() => {
   write(join(src, "bin", "plugin.js"), "new-plugin");
   write(join(src, "imgs", "a.png"), "new-img");
   write(join(src, "ui", "slot.html"), "new-ui");
+  write(join(src, "profiles", "VibeTribe.streamDeckProfile"), "new-profile");
   write(join(src, "manifest.json"), "new-manifest");
   plugins = join(root, "fakec", "appdata", "Elgato", "StreamDeck", "Plugins");
   dest = join(plugins, `${UUID}.sdPlugin`);

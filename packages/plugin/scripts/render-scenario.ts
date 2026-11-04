@@ -17,9 +17,9 @@ import {
 } from "@vibetribe/hub";
 import { parseEnvelope } from "@vibetribe/protocol";
 import { DEFAULT_VARIANT, VARIANTS, type Variant } from "@vibetribe/render";
-import { MemorySurface } from "../src/compose";
 import { Deck } from "../src/deck/deck";
 import { defaultMk2Layout } from "../src/deck/keys";
+import { MemorySurface } from "../src/memory-surface";
 
 export const DEFAULT_TIME_ZONE = "Europe/Berlin";
 

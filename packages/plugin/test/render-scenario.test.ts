@@ -3,8 +3,9 @@ import { fileURLToPath } from "node:url";
 import { parseEnvelope } from "@vibetribe/protocol";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { parseRenderArgs, renderScenario } from "../scripts/render-scenario";
-import { MemorySurface, type RunningVibeTribe, startVibeTribe } from "../src/compose";
+import { type RunningVibeTribe, startVibeTribe } from "../src/compose";
 import { defaultMk2Layout } from "../src/deck/keys";
+import { MemorySurface } from "../src/memory-surface";
 import { svgFromDataUrl } from "./helpers";
 
 const scenario = (name: string) =>

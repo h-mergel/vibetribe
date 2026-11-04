@@ -45,6 +45,9 @@
     </style>
   </head>
   <body>
+    <section id="home" hidden>
+      <p id="homeText"></p>
+    </section>
     <section id="pinned" hidden>
       <label><input type="checkbox" id="preferPinned" checked /> Prefer pinned sessions</label>
       <p>Sessions pinned in Claude Desktop keep their slots. Applies to all session slots.</p>
@@ -70,6 +73,7 @@
       window.connectElgatoStreamDeckSocket = (port, uuid, registerEvent, _info, actionInfo) => {
         const KEY = "preferPinned";
         const SLOT = "dev.h2k.vibetribe.slot";
+        const HOME = "dev.h2k.vibetribe.home";
         const HELP = "https://github.com/h-mergel/vibetribe#install-from-the-marketplace";
         const STATES = {
           missing:
@@ -78,7 +82,8 @@
           installed: "Set up on Windows.",
         };
         const $ = (id) => document.getElementById(id);
-        const action = JSON.parse(actionInfo).action;
+        const info = JSON.parse(actionInfo);
+        const action = info.action;
         const box = $("preferPinned");
         const socket = new WebSocket(`ws://127.0.0.1:${port}`);
         let settings = {};
@@ -86,6 +91,10 @@
           socket.send(JSON.stringify({ event, action, context: uuid, payload }));
         const ask = (setup) => send("sendToPlugin", { setup });
         $("pinned").hidden = action !== SLOT;
+        $("home").hidden = action !== HOME;
+        $("homeText").textContent = info.payload?.settings?.back
+          ? "Press to return to your previous profile."
+          : "Put this key on your main screen. The circle shows who is waiting and how many; a press opens the full VibeTribe view on this device.";
         socket.onopen = () => {
           socket.send(JSON.stringify({ event: registerEvent, uuid }));
           socket.send(JSON.stringify({ event: "getGlobalSettings", context: uuid }));

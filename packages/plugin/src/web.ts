@@ -4,8 +4,11 @@
  */
 export const USAGE_SETTINGS_URL = "https://claude.ai/settings/usage";
 
+/** The README's sign-in instructions (limit keys that show "Sign in"). */
+export const SIGN_IN_HELP_URL = "https://github.com/h-mergel/vibetribe#sign-in";
+
 /** Web pages the plugin may open besides its own /debug page: exactly these, nothing derived. */
-const ALLOWED_WEB_URLS: ReadonlySet<string> = new Set([USAGE_SETTINGS_URL]);
+const ALLOWED_WEB_URLS: ReadonlySet<string> = new Set([USAGE_SETTINGS_URL, SIGN_IN_HELP_URL]);
 
 /** Strict check right before a web page goes to the Stream Deck app. */
 export const isAllowedWebUrl = (url: string): boolean => ALLOWED_WEB_URLS.has(url);

@@ -12,19 +12,13 @@ import type { DeckMirror, HubState } from "@vibetribe/hub";
 import { DEFAULT_VARIANT, type KeyFlash, render, type Variant } from "@vibetribe/render";
 import { svgDataUrl } from "../image";
 import { jumpUrlFor } from "../jump/target";
-import { PressFeedback } from "./feedback";
+import { FLASH_MS, PressFeedback, STATUS_EXPANDED_MS } from "./feedback";
 import { contentSignature, framePriority } from "./frame";
 import { type KeyPlacement, KeyRegistry } from "./keys";
 import { Motion } from "./motion";
 import type { DeckCommand, PressKind } from "./press";
 import { ShownFrames } from "./shown";
-import { inboxView, tileFor } from "./tiles";
-
-/** Pressed-key feedback: "Open…" outlasts the ~2 s Claude Desktop needs to show the session. */
-export const FLASH_MS: Record<KeyFlash, number> = { jumping: 2_500, no_target: 2_000 };
-
-/** Status tap: all four sources for 5 s (handoff §4.3). */
-export const STATUS_EXPANDED_MS = 5_000;
+import { breathingHomes, homeKeyPress, inboxView, limitKeyPress, tileFor } from "./tiles";
 
 /** Elgato guideline: 10 setImage per second for the whole plugin (spec §5). */
 export const DEFAULT_MAX_FRAMES = 10;
@@ -84,7 +78,7 @@ export class Deck {
 
   /** A key that (re)appears is always redrawn: the app forgets images of hidden keys. */
   keyAppeared(p: KeyPlacement, now: number): void {
-    if (!this.#keys.add(p)) return;
+    if (!this.#keys.add(p, now)) return;
     this.#scheduler.forget(p.id);
     this.#shown.forget(p.id);
     this.#signature.delete(p.id);
@@ -157,16 +151,16 @@ export class Deck {
       }
       case "limit5h":
       case "limitWeek":
-        if (kind === "short") out.push({ type: "refresh_usage" });
-        break;
       case "extra":
-        // the page where the user switches Extra Usage on or off; hold: nothing
-        if (kind === "short") out.push({ type: "open_usage" });
+        if (kind === "short") out.push(limitKeyPress(key.role, this.#state.limits));
         break;
       case "status":
         // tap: all sources for 5 s; hold: diagnostics (the debug page)
         if (kind === "short") this.#feedback.expand(id, now + STATUS_EXPANDED_MS);
         else out.push({ type: "open_debug" });
+        break;
+      case "home":
+        if (kind === "short") out.push(homeKeyPress(key));
         break;
     }
     this.#render(now);
@@ -213,10 +207,7 @@ export class Deck {
     return id === null ? undefined : this.#state?.sessions.find((v) => v.id === id);
   }
 
-  /**
-   * Give back the sessions of long-hidden keys, grow the table, then fill visible indexes; with
-   * `promote`, sessions that need attention or are pinned displace calm ones (`SlotTable.promote`).
-   */
+  /** Give back sessions of long-hidden keys, grow the table, fill visible slots, then `promote`. */
   #sync(now: number, promote: boolean): void {
     for (const index of this.#keys.releaseHidden(now)) {
       const id = this.#slots.idAt(index);
@@ -225,9 +216,10 @@ export class Deck {
     const n = this.#keys.slotCount;
     if (n > this.#slots.count) this.#slots.resize(n);
     if (!this.#state) return;
+    const { sessions, pins } = this.#state;
     const visible = (i: number) => this.#keys.isVisibleIndex(i);
-    this.#slots.sync(this.#state.sessions, now, visible);
-    if (promote) this.#slots.promote(this.#state.sessions, now, visible, this.#state.pins);
+    this.#slots.sync(sessions, now, visible);
+    if (promote) this.#slots.promote(sessions, now, visible, pins, this.#keys.settled(now));
   }
 
   /**
@@ -248,7 +240,10 @@ export class Deck {
       this.#variant === "comfortable" && this.#keys.all().some((k) => k.role === "inbox")
         ? inbox.summary.top
         : null;
-    const motion = this.#motion.frame(now, { shown: shownViews, animated, inboxClock });
+    // a breathing home key wants as many frames as a breathing slot key
+    const homes = breathingHomes(this.#keys.all(), views, animated);
+    const demand = [...shownViews, ...homes];
+    const motion = this.#motion.frame(now, { shown: demand, animated, inboxClock });
     const sessionOn = (keyId: string): string | null | undefined => {
       const index = this.#keys.slotIndexOf(keyId);
       return index >= 0 ? this.#slots.idAt(index) : undefined;
@@ -264,12 +259,15 @@ export class Deck {
       clockStepS: motion.clockStepS,
     };
     // headroom per second: 4 frames per breathing key plus one for state changes
-    const breathing = shownViews.filter((v) => animated.has(v.id)).length;
+    const breathing = demand.filter((v) => animated.has(v.id)).length;
     this.#scheduler.setReserve(BREATH_FPS * breathing + 1);
     for (const key of this.#keys.all()) {
       if (!this.#shown.due(key.id, now)) continue;
       const slotIndex = key.role === "slot" ? this.#keys.slotIndexOf(key.id) : -1;
-      const breathes = slotIndex >= 0 && animated.has(slotIds[slotIndex] ?? "");
+      const breathes =
+        key.role === "home"
+          ? !key.back && homes.length > 0
+          : slotIndex >= 0 && animated.has(slotIds[slotIndex] ?? "");
       try {
         const tile = tileFor(key, slotIndex, this.#state, ctx);
         const image = svgDataUrl(render(tile, { variant: this.#variant }));

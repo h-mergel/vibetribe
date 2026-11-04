@@ -16,7 +16,7 @@
     "tiles:measure": "tsx packages/render/scripts/measure.ts",
     "check": "pnpm lint && pnpm typecheck && pnpm test",
     "hub:simulate": "tsx packages/hub/scripts/simulate.ts",
-    "plugin:build": "pnpm --filter @vibetribe/plugin build",
+    "plugin:build": "pnpm --filter @vibetribe/plugin build && tsx packages/plugin/scripts/bundled-profile.ts",
     "plugin:deploy": "pnpm plugin:build && bash packages/plugin/scripts/deploy.sh",
     "plugin:pack": "pnpm plugin:build && bash packages/plugin/scripts/pack.sh && tsx packages/plugin/scripts/marketplace-media.ts dist/marketplace",
     "plugin:headless": "tsx packages/plugin/src/headless.ts",

@@ -6,7 +6,9 @@ export type PressKind = "short" | "long";
  * What a key press asks the adapter to do. `jump` carries the validated link; `markSeen` is true
  * for slot keys (spec §4.4 a) and false for the inbox. `landed` is the inbox session the user
  * stayed on (only sessions with a link); the adapter marks it seen unless its jump failed.
- * `open_usage` asks for the claude.ai usage settings page (Extra key).
+ * `open_usage` asks for the claude.ai usage settings page (Extra key), `open_sign_in` for the
+ * sign-in instructions (a limit key that shows "Sign in"). `switch_profile` without a profile
+ * returns to the previous one; `no_profile` is a home key on a device without a bundled profile.
  */
 export type DeckCommand =
   | { type: "jump"; session: SessionView; url: string; markSeen: boolean }
@@ -15,7 +17,10 @@ export type DeckCommand =
   | { type: "seen"; session: SessionView }
   | { type: "refresh_usage" }
   | { type: "open_debug" }
-  | { type: "open_usage" };
+  | { type: "open_usage" }
+  | { type: "open_sign_in" }
+  | { type: "switch_profile"; keyId: string; device: string; profile?: string }
+  | { type: "no_profile"; keyId: string; device: string };
 
 /** Spec §4.4 (c): a long press is ≥ 600 ms. */
 export const LONG_PRESS_MS = 600;

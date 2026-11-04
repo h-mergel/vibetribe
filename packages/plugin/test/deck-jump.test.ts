@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FLASH_MS } from "../src/deck/deck";
+import { FLASH_MS } from "../src/deck/feedback";
 import type { DeckCommand } from "../src/deck/press";
 import { deckHarness, hubState, T0, view } from "./helpers";
 

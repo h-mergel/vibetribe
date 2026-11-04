@@ -15,7 +15,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 UUID=dev.h2k.vibetribe
 SRC=${VIBETRIBE_DEPLOY_SRC:-$PWD/$UUID.sdPlugin}
-FILES=(bin imgs ui manifest.json)
+FILES=(bin imgs profiles ui manifest.json)
 
 die() {
   echo "deploy: $*" >&2
@@ -24,6 +24,7 @@ die() {
 
 [ -f "$SRC/bin/plugin.js" ] || die "$SRC/bin/plugin.js missing - run: pnpm plugin:build"
 [ -d "$SRC/imgs" ] || die "$SRC/imgs missing - run: pnpm plugin:build"
+[ -d "$SRC/profiles" ] || die "$SRC/profiles missing - run: pnpm plugin:build"
 [ -d "$SRC/ui" ] || die "$SRC/ui missing"
 [ -f "$SRC/manifest.json" ] || die "$SRC/manifest.json missing"
 
@@ -72,7 +73,7 @@ trap cleanup EXIT
 
 # 1. stage a full copy; a failure here leaves the installed version untouched
 mkdir "$NEW"
-cp -r "$SRC/bin" "$SRC/imgs" "$SRC/ui" "$SRC/manifest.json" "$NEW/" || die "copy failed - the installed plugin was not changed"
+cp -r "$SRC/bin" "$SRC/imgs" "$SRC/profiles" "$SRC/ui" "$SRC/manifest.json" "$NEW/" || die "copy failed - the installed plugin was not changed"
 
 # 2. swap: old files out, new files in; every step is a rename
 mkdir -p "$DEST"

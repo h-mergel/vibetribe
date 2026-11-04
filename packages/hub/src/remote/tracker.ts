@@ -45,6 +45,13 @@ interface Turn {
   listedAt: number;
 }
 
+/** A waiting session the user has looked at: calm while the list shows this same wait. */
+interface Look {
+  /** last_event_at of the wait; null = unknown (then only leaving the wait ends the look) */
+  at: number | null;
+  listedAt: number;
+}
+
 /**
  * Turns successive listings into store input. It remembers the last raised done + unread turn per
  * session by its last_event_at, also while the session is missing from the list (up to
@@ -53,11 +60,18 @@ interface Turn {
  * needs evidence (probe J2b: last_event_at also moves quietly on idle sessions): a
  * changed last_event_at counts only after some listing showed the session without done + unread
  * (busy, waiting or read). Without last_event_at that evidence alone decides.
+ *
+ * A waiting session with a quiet worker that the user has looked at goes to the store as idle
+ * until the list shows something new (`#calm`); with a running worker it stays loud. The look is kept over gaps in the list, like a raised turn, and only
+ * in memory: after a restart the session is Input until it is looked at again.
  */
 export class RemoteTracker {
   readonly #turns = new Map<string, Turn>();
+  readonly #looks = new Map<string, Look>();
   /** ids that were done + unread or waiting in the last listing: idle now means read */
   #previousAlarm = new Set<string>();
+  /** the sessions a look can calm: loud, waiting and quiet in the last listing, by last_event_at */
+  #waiting = new Map<string, number | null>();
 
   /**
    * `exclude`: bridge ids a local session shows (local wins). `present`: remote session ids the
@@ -76,13 +90,17 @@ export class RemoteTracker {
     for (const s of sessions) {
       if (exclude.has(s.id) || ids.has(s.id)) continue;
       ids.add(s.id);
-      shown.push(s);
+      shown.push(this.#calm(s, now));
     }
+    // after #calm: a gap in the polls alone (a sleeping laptop) does not end the look of a listed session
+    for (const [id, look] of this.#looks)
+      if (now - look.listedAt > TURN_MEMORY_MS) this.#looks.delete(id);
     // the server clock may run ahead of ours: an episode never starts in the future
     const atOf = (s: RemoteSession): number => (s.at === null ? now : Math.min(s.at, now));
     const finished: RemoteBatch["finished"] = [];
     const read: string[] = [];
     const alarm = new Set<string>();
+    this.#waiting = new Map();
     for (const s of shown) {
       const turn = this.#turns.get(s.id);
       if (turn) turn.listedAt = now;
@@ -98,8 +116,10 @@ export class RemoteTracker {
         continue;
       }
       if (turn) turn.reopened = true;
-      if (s.status === "waiting") alarm.add(s.id);
-      else if (s.status === "idle" && this.#previousAlarm.has(s.id)) {
+      if (s.status === "waiting") {
+        alarm.add(s.id);
+        if (s.quiet) this.#waiting.set(s.id, s.at);
+      } else if (s.status === "idle" && this.#previousAlarm.has(s.id)) {
         // only an idle session counts as read: a new wait or turn must not inherit "seen"
         read.push(s.id);
         if (turn) turn.acked = true;
@@ -120,15 +140,38 @@ export class RemoteTracker {
     };
   }
 
-  /** The raised turn was seen on the deck. */
-  ack(id: string): void {
+  /**
+   * The user looked at the session: its raised turn is seen. True when that calms a wait of the
+   * last listing; the caller plans that listing again to show it at once.
+   */
+  ack(id: string, now: number): boolean {
     const turn = this.#turns.get(id);
     if (turn) turn.acked = true;
+    const at = this.#waiting.get(id);
+    if (at === undefined) return false;
+    this.#looks.set(id, { at, listedAt: now });
+    return true;
   }
 
-  /** The store dropped the session (no signal for too long): its next done + unread is new. */
+  /**
+   * The store dropped the session (no signal for too long): its next done + unread is new. A look
+   * stays: an outage of the list is nothing new.
+   */
   forget(id: string): void {
     this.#turns.delete(id);
     this.#previousAlarm.delete(id);
+    this.#waiting.delete(id);
+  }
+
+  /** The session as the store should see it: idle while it is the wait the user looked at. */
+  #calm(s: RemoteSession, now: number): RemoteSession {
+    const look = this.#looks.get(s.id);
+    if (!look) return s;
+    if (s.status === "waiting" && s.quiet && s.at === look.at) {
+      look.listedAt = now;
+      return { ...s, status: "idle" };
+    }
+    this.#looks.delete(s.id);
+    return s;
   }
 }

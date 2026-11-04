@@ -15,6 +15,7 @@ export const NAMES = {
   limitWeek: "Weekly limit",
   extra: "Extra Usage",
   status: "Status",
+  home: "VibeTribe",
 };
 
 export const PAGE1_ID = "aaaaaaaa-0000-4000-8000-000000000001";

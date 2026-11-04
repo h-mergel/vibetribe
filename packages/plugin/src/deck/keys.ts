@@ -1,4 +1,4 @@
-export type KeyRole = "slot" | "inbox" | "limit5h" | "limitWeek" | "extra" | "status";
+export type KeyRole = "slot" | "inbox" | "limit5h" | "limitWeek" | "extra" | "status" | "home";
 
 export const KEY_ROLES: readonly KeyRole[] = [
   "slot",
@@ -7,6 +7,7 @@ export const KEY_ROLES: readonly KeyRole[] = [
   "limitWeek",
   "extra",
   "status",
+  "home",
 ];
 
 /** One visible key: the action instance id plus where it sits. */
@@ -16,6 +17,10 @@ export interface KeyPlacement {
   device: string;
   row: number;
   column: number;
+  /** home keys: the SDK's device type, which decides whether a profile exists for the device */
+  deviceType?: number;
+  /** home keys: the instance setting of the key inside the bundled profile that leads back */
+  back?: boolean;
 }
 
 /** Reading order on the deck: device, then row, then column (plain code-unit order, locale independent). */
@@ -28,6 +33,9 @@ const isGrid = (n: unknown): n is number => typeof n === "number" && Number.isIn
 
 /** A slot whose key stays hidden longer than this gives its session back (deleted key, long page switch). */
 export const HIDDEN_RELEASE_MS = 60_000;
+
+/** A page switch reports its keys one by one: until this long after the last one, hidden may be momentary. */
+export const KEYS_SETTLE_MS = 500;
 
 /**
  * Visible keys by id, plus a stable slot numbering (spec §6.3: a session keeps its slot).
@@ -45,13 +53,21 @@ export class KeyRegistry {
   /** slot index -> since when its key is hidden */
   readonly #hiddenSince = new Map<number, number>();
   #nextIndex = 0;
+  #changedAt = Number.NEGATIVE_INFINITY;
+
+  /** False while keys may still be coming and going; a clock set back does not hold it up. */
+  settled(now: number): boolean {
+    const age = now - this.#changedAt;
+    return age < 0 || age >= KEYS_SETTLE_MS;
+  }
 
   /**
    * Register or update a visible key. Returns false and ignores the call when row or column is not
    * a finite integer (an existing key stays as it was); true otherwise.
    */
-  add(p: KeyPlacement): boolean {
+  add(p: KeyPlacement, now: number): boolean {
     if (!isGrid(p.row) || !isGrid(p.column)) return false;
+    this.#changedAt = now;
     this.#keys.set(p.id, { ...p });
     this.#hiddenSince.delete(this.slotIndexOf(p.id));
     if (p.role === "slot" && !this.#indexById.has(p.id)) {
@@ -65,6 +81,7 @@ export class KeyRegistry {
 
   /** The key is no longer visible; its slot index is kept until `releaseHidden`. */
   remove(id: string, now: number): void {
+    this.#changedAt = now;
     this.#keys.delete(id);
     const index = this.slotIndexOf(id);
     if (index >= 0 && !this.#hiddenSince.has(index)) this.#hiddenSince.set(index, now);

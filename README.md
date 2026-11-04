@@ -55,19 +55,27 @@ Every state is **triple-coded** – color, a distinct shape and a word – so it
 
 The origin is always in the bottom right: `WIN`, `WSL` or `REM`. Waiting time reads `42 s`, `3 min`, `1:05 h`, `12 h`.
 
-### Meet the tribe
-
-Every tribe needs someone who keeps an eye on the fire.
+### Set up in one click
 
 <p align="center">
-  <img src="docs/readme/tribe.jpg" alt="Cave painting of the VibeTribe: one caveman raises his club asking for approval, one has a question, others pound a stone and hunt a mammoth, one lies under a boulder, one waits by an hourglass, one sleeps by the fire, and footprints lead out of the cave" width="100%">
+  <img src="docs/readme/setup.png" alt="Three setup steps – install VibeTribe, click any VibeTribe key, click Set up hooks – above a drawing of the key settings in the Stream Deck app" width="100%">
 </p>
-
-<sub>Approve: “May I hit it?” · Input: “Ugh?” · Working: bang, bang, bang · Done: mammoth acquired · Error: boulder · Limited: fire's out, wait · Idle: zzz · Offline: gone hunting.</sub>
 
 ## Layout and keys
 
-VibeTribe ships six actions (category "VibeTribe"). You decide where they go – the plugin adapts to whatever keys you place. A suggestion for page 1:
+VibeTribe ships seven actions (category "VibeTribe"). Two ways to use them:
+
+**The live key and the ready-made profile (15-key Stream Deck hardware such as the MK.2, not Stream Deck Mobile or the Virtual Stream Deck).** Drag the action **VibeTribe** onto your main screen. It shows the logo's circle live, next to your own keys: the large top dot is the most urgent session waiting for you, in its state color; the other dots are further sessions by priority; a ring is a free place; the number in the center counts the waiting sessions. A red frame means the hub has a problem (a thin amber one: stale data); the status key says which. A press opens the plugin's ready-made profile with only VibeTribe keys, and its top-left **Back** key (a left arrow) returns you to the profile you came from:
+
+```
+Back    │ Inbox  │ 5h     │ Week   │ Extra
+Status  │ Slot 1 │ Slot 2 │ Slot 3 │ Slot 4
+Slot 5  │ Slot 6 │ Slot 7 │ Slot 8 │ Slot 9
+```
+
+Installing the plugin never changes what you see: the profile is only added when you first press the key (the app may ask you to confirm) and only opens on a press. On a device without a matching profile the key shows the alert triangle.
+
+**Your own layout.** Place the other actions on any keys – the plugin adapts to whatever you place. A suggestion for page 1:
 
 ```
 Apps    │ 5h     │ Week   │ Inbox  │ Status
@@ -77,10 +85,11 @@ Page 2  │ Slot 5 │ Slot 6 │ Slot 7 │ Slot 8
 
 | Key | Short press | Long press (≥ 600 ms) |
 |---|---|---|
+| **VibeTribe** | open the ready-made profile; as `Back` inside it, return to the previous profile | – |
 | **Slot** | open the session in Claude Desktop | mark as seen |
 | **Inbox** | jump to the most urgent session, again within 5 s for the next (`2/3`) | acknowledge all `Done` |
-| **5h / Week** | refresh the limit (at most every 120 s) | – |
-| **Extra** | open `claude.ai/settings/usage` | – |
+| **5h / Week** | refresh the limit (at most every 120 s); while it shows `Sign in`, open the [sign-in instructions](#sign-in) | – |
+| **Extra** | open `claude.ai/settings/usage`; while it shows `Sign in`, open the [sign-in instructions](#sign-in) | – |
 | **Status** | show all four sources for 5 s | open the debug page |
 
 Slots are stable: a session keeps its slot for as long as it lives. Sessions that need attention push calm ones out of the slots; anything that doesn't fit is counted on the inbox as `+N`. Add as many slot keys as you like – the plugin uses every one you place.
@@ -110,7 +119,7 @@ Architecture: ports & adapters, dependencies point inward only (`plugin → rend
 
 - Windows 10 or later (tested on Windows 11), optionally WSL2 with any distribution
 - Stream Deck app 7.1 or later (tested with 7.6) and a **Stream Deck MK.2**
-- Claude Code and/or Claude Desktop, signed in, with `claude.exe` on your `PATH`
+- Claude Code signed in, with `claude.exe` on your `PATH`; Claude Desktop alone isn't enough for limits and remote sessions
 - For sessions in WSL: Node.js 20 or later inside WSL, on the login `PATH` (`~/.profile`) – older `apt` packages (Ubuntu 22.04: 12, 24.04: 18) are too old
 - Only to build from source: Node.js ≥ 24 and pnpm 10.33
 
@@ -120,11 +129,11 @@ Architecture: ports & adapters, dependencies point inward only (`plugin → rend
 ## Install from the Marketplace
 
 1. In the Stream Deck app, open the **Marketplace**, search for **VibeTribe** and install it (free; once it is listed).
-2. Drag the actions of the category **VibeTribe** onto your keys – Status, Inbox, 5h, Week, Extra and as many Session slots as you like (see [Layout and keys](#layout-and-keys)).
-3. Click any VibeTribe key in the Stream Deck app. Under **Claude Code hooks**, click **Set up hooks**. Until you do, the status key shows `Setup`.
+2. Drag the action **VibeTribe** from the category of the same name onto your main screen. A press opens the ready-made profile with all the keys, so you don't have to place them one by one. The app may ask you to confirm the profile on that first press. Prefer your own layout? Drag Status, Inbox, 5h, Week, Extra and as many Session slots as you like instead (see [Layout and keys](#layout-and-keys)).
+3. Click the VibeTribe key in the Stream Deck app. Under **Claude Code hooks**, click **Set up hooks**. Until you do, the status key shows `Setup`.
 4. Sessions in WSL? Click **Set up in WSL** in the same place (it appears once VibeTribe has found your default WSL distribution). It needs Node.js 20 or later inside WSL; if it is missing or too old, the settings say so.
 
-Nothing changes on your machine before that click. Setup adds 15 hook events and a statusline passthrough to `~/.claude/settings.json` – with a backup next to it (`settings.json.vibetribe-<time>.bak`), atomically and idempotently; other entries and your own statusline keep working. It also writes the reporter (`reporter.mjs`) and a copy of Stream Deck's Node.js that runs it (`node-<version>.exe`, about 90 MB) to `%USERPROFILE%\.vibetribe`, because Stream Deck's own Node.js moves with every app update. Claude Code sessions report to VibeTribe as soon as they pick up the new settings; restart a session that stays missing.
+Your Claude settings stay untouched until that click. Setup adds 15 hook events and a statusline passthrough to `~/.claude/settings.json` – with a backup next to it (`settings.json.vibetribe-<time>.bak`), atomically and idempotently; other entries and your own statusline keep working. It also writes the reporter (`reporter.mjs`) and a copy of Stream Deck's Node.js that runs it (`node-<version>.exe`, about 90 MB) to `%USERPROFILE%\.vibetribe`, because Stream Deck's own Node.js moves with every app update. Claude Code sessions report to VibeTribe as soon as they pick up the new settings; restart a session that stays missing.
 
 After a plugin update the status key may show `Setup` again: click **Update hooks**.
 
@@ -236,11 +245,23 @@ The hub listens on `127.0.0.1` only, rejects browser requests and requires a bea
 
 - Windows only (with optional WSL).
 - Usage, the session list and Claude Desktop's own files are **undocumented** and may break at any time (Claude Desktop already moved its data folder once). The deck shows outages calmly as `As of 14:32`, `Sign in` or `Offline`; the hub checks its local assumptions every hour and logs a `drift:` line when one breaks. From source, run `pnpm drift` after updates of Claude Desktop, Claude Code, Windows or WSL.
-- Remote sessions are coarser: no tool name, no background jobs, no distinction between approval and question, up to 20 s delay. Once you have read a remote turn, it no longer counts as waiting – unless Claude is still running.
+- Remote sessions are coarser: no tool name, no background jobs, no distinction between approval and question, up to 20 s delay. Once you have read a remote turn, it no longer counts as waiting – unless Claude is still running; then it stays loud.
+- The remote list rarely marks a turn as read, so a remote `Input` also goes calm once you have pressed its slot or landed on it from the Inbox, and stays calm until the session has something new. While Claude is still running, it stays `Input` after you look at it: that is usually a real approval request. Opening a remote session only in Claude Desktop or on claude.ai isn't detected, and after a plugin restart it shows `Input` again until you look at it again from the deck.
 - Pins only work for sessions in Claude Desktop's Code tab; pinned remote or cloud sessions are not read.
 - A session that is already open in Claude Desktop when it finishes stays `Done` until you jump to it from the deck or click another session and back.
 - `Done` of local sessions is lost on a plugin restart (remote `Done` comes back, because the remote list reports unread sessions); background jobs are kept.
 - Non-Latin titles (e.g. Japanese) are missing from the tile font.
+
+## Sign in
+
+The limit keys and remote sessions need Claude Code's own login; VibeTribe has no login of its own. While a limit key shows `Sign in`, pressing it opens this section.
+
+1. In a Windows terminal (PowerShell), run `claude auth login`.
+2. Confirm in the browser.
+
+The values return within minutes. Run the same command in WSL only if you use the CLI there.
+
+If PowerShell doesn't know `claude`, install Claude Code first; signing in to Claude Desktop isn't enough.
 
 ## Troubleshooting
 
@@ -249,9 +270,11 @@ The hub listens on `127.0.0.1` only, rejects browser requests and requires a bea
 | The VibeTribe actions don't appear | The Stream Deck app hasn't loaded the plugin | Quit the app completely (tray icon too) and start it again – `streamdeck://plugins/restart/…` doesn't work outside developer mode |
 | `Port in use` on the status key | None of the four ports (43710, 37710, 31710, 25710) is free – e.g. WSL's mirrored networking reserves a moving block of ports, or a standalone `hub.mjs` runs | The plugin retries every 5 s on its own. `pnpm drift` shows which ports are blocked; stop the other process if there is one |
 | Pins or "opened in Claude Desktop" stopped working | Claude Desktop changed its files with an update | `plugin.log` has a `drift:` line naming what moved; please open an issue. From source, `pnpm drift` checks every assumption |
+| An alert triangle on the VibeTribe key | No ready-made profile for this device (it exists for 15-key Stream Deck hardware only), or the request could not be sent | Place the keys yourself; `plugin.log` names the reason |
+| A red or amber frame on the VibeTribe key | Same problem the status key reports (red: `Setup`, `Port in use`, a source that is down; amber: stale data) | Open the ready-made profile and read the status key |
 | `Setup` on the status key | Claude Code's hooks are not set up yet, or they are older than the plugin | Click a VibeTribe key in the Stream Deck app, then **Set up hooks** or **Update hooks** |
 | `No token` on the status key | The plugin could not create `%USERPROFILE%\.vibetribe\token` | See `plugin.log`; check that the folder is writable |
-| `Sign in` on the limit keys | The Claude login is missing or expired | Sign in to Claude Code; make sure `where.exe claude` finds the CLI so the token can be refreshed |
+| `Sign in` on the limit keys | The Claude login is missing or expired | Press the key or see [Sign in](#sign-in) and run `claude auth login`; make sure `where.exe claude` finds the CLI so the token can be refreshed |
 | `As of 14:32` | The last usage data is older than 15 min | Usually temporary; short-press the key to refresh (at most every 120 s) |
 | A slot shows `No link` | The session has no deep link (e.g. CLI in a terminal) | Expected – only sessions Claude Desktop knows can be opened |
 | Sessions from WSL are missing | WSL is not set up, or your sessions run in another distribution | Click **Set up in WSL**; VibeTribe follows your default distribution (`wsl -l -v`, marked `*`), or set `VIBETRIBE_WSL_DISTRO` |

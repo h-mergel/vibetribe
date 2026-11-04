@@ -84,23 +84,26 @@ export class SlotTable {
   }
 
   /**
-   * Call after `sync` with the same views. First, a session without a slot that needs attention
-   * takes the allowed slot of the session that has been calm longest, of an unpinned one if any.
-   * Then a calm session pinned in Claude Desktop without a slot takes the allowed slot of a calm
-   * unpinned one, except that a resting one never takes the slot of a running one. `pins` are
-   * Desktop ids in sidebar order: running pinned sessions claim first, then the sidebar order;
-   * while a resting pinned one waits, a running one takes the slot of a running session first.
+   * Call after `sync` with the same views. First, a session that needs attention and has no slot,
+   * or sits on a disallowed (hidden) index, takes a free allowed slot if it left a hidden one,
+   * else the allowed slot of the session that has been calm longest, of an unpinned one if any;
+   * coming from a hidden index it swaps, so the displaced session stays in the table. Then a calm
+   * session pinned in Claude Desktop without a slot takes the allowed slot of a calm unpinned one,
+   * except that a resting one never takes the slot of a running one. `pins` are Desktop ids in
+   * sidebar order: running pinned sessions claim first, then the sidebar order; while a resting
+   * pinned one waits, a running one takes the slot of a running session first.
    * Never displaced: a session that needs attention, or one that needed it less than
    * ATTENTION_HOLD_MS ago. Unpinned calm sessions never displace, pinned ones never displace each
-   * other, and a session on a disallowed (hidden) index keeps it (the 60 s hidden-key rule frees
-   * it). Callers must not promote while keys are still reappearing one by one (the first visible
-   * key would lose its session).
+   * other, and a calm session on a hidden index keeps it (the 60 s hidden-key rule frees it).
+   * While keys are still coming and going one by one, callers pass `surfaceHidden` false: a hidden
+   * index may only be hidden for the moment.
    */
   promote(
     views: SessionView[],
     now: number,
     canAssign: (index: number) => boolean = () => true,
     pins: readonly string[] = [],
+    surfaceHidden = true,
   ): void {
     const byId = new Map(views.map((v) => [v.id, v]));
     for (const id of this.#heldAt.keys()) if (!byId.has(id)) this.#heldAt.delete(id);
@@ -110,10 +113,22 @@ export class SlotTable {
     const pinOf = (v: SessionView): number =>
       v.hostSessionId === null ? -1 : pins.indexOf(v.hostSessionId);
     const unpinned = (v: SessionView): boolean => pinOf(v) < 0;
-    for (const v of this.overflow(views).filter(needsAttention)) {
-      const i = this.#calmest(byId, now, canAssign, unpinned);
-      const j = i >= 0 ? i : this.#calmest(byId, now, canAssign, () => true);
+    const onHidden = (v: SessionView): boolean => {
+      const i = this.#slots.indexOf(v.id);
+      return surfaceHidden && i >= 0 && !canAssign(i);
+    };
+    const claimants = [...this.overflow(views), ...views.filter(onHidden)]
+      .filter(needsAttention)
+      .sort(compareSeverity);
+    for (const v of claimants) {
+      let j = this.#slots.findIndex(
+        (id, i) => id === null && canAssign(i) && this.#reserved[i] === null,
+      );
+      if (j < 0) j = this.#calmest(byId, now, canAssign, unpinned);
+      if (j < 0) j = this.#calmest(byId, now, canAssign, () => true);
       if (j < 0) return;
+      const from = this.#slots.indexOf(v.id);
+      if (from >= 0) this.#slots[from] = this.#slots[j] ?? null;
       this.#slots[j] = v.id;
     }
     const pinned = this.overflow(views)

@@ -19,6 +19,8 @@ export function contentSignature(tile: Tile): string {
     delete copy.note;
   } else if (tile.kind === "extra") {
     delete copy.note;
+  } else if (tile.kind === "home") {
+    if (tile.top) copy.top = { state: tile.top.state };
   }
   return JSON.stringify(copy);
 }

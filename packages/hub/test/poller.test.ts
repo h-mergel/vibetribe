@@ -375,4 +375,18 @@ describe("UsagePoller", () => {
       error: "no credentials",
     });
   });
+
+  it("without credentials asks to sign in, until a later poll reads the usage again", async () => {
+    const hub = new Hub();
+    let current: Credentials | null = null;
+    const { p } = ports({ readCredentials: async () => current });
+    const poller = new UsagePoller({ hub, ports: p, refresher: fakeRefresher(false) });
+    await poller.poll(HOUR);
+    expect(hub.state(HOUR).limits.auth).toBe("expired");
+    current = creds(10 * HOUR);
+    await poller.poll(HOUR + POLL_MS);
+    const state = hub.state(HOUR + POLL_MS);
+    expect(state.limits.auth).toBe("ok");
+    expect(state.sources.usage).toMatchObject({ health: "ok", error: null });
+  });
 });

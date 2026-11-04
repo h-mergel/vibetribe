@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 UUID=dev.h2k.vibetribe
 STAGE=dist/stage
-rm -rf "$STAGE"
+rm -rf "$STAGE" dist/marketplace
 mkdir -p "$STAGE"
 cp -r "packages/plugin/$UUID.sdPlugin" "$STAGE/"
 streamdeck validate "$STAGE/$UUID.sdPlugin"

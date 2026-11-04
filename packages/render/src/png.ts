@@ -39,7 +39,7 @@ export function boxOf(fragment: string): Box | null {
   return b ? { x: b.x, y: b.y, width: b.width, height: b.height } : null;
 }
 
-/** RGBA pixels of the rendered SVG, used to verify that text actually rasterizes. */
-export function renderPixels(svg: string): Buffer {
-  return rasterize(svg).render().pixels;
+/** Premultiplied RGBA pixels of the rendered SVG. */
+export function renderPixels(svg: string, width = 144): Buffer {
+  return rasterize(svg, width).render().pixels;
 }

@@ -1,4 +1,5 @@
 import type { Removal } from "@vibetribe/core";
+import type { HubState } from "@vibetribe/hub";
 import { describe, expect, it } from "vitest";
 import { Deck } from "../src/deck/deck";
 import { contentSignature } from "../src/deck/frame";
@@ -141,7 +142,7 @@ describe("Deck keys appearing and vanishing (spec §6.3 stable slots)", () => {
     expect([1, 2, 3].map((n) => svgOf(slot(n)))).toEqual(before);
   });
 
-  it("a middle slot key vanishes: the other keys keep their sessions, the orphaned one overflows", () => {
+  it("a middle slot key vanishes: the other keys keep their sessions, a waiting orphan moves to a free key", () => {
     const { d, svgOf } = deck(100);
     const sessions = [session("a"), session("b"), session("c")];
     d.update(hubState({ sessions }), [], T0);
@@ -153,11 +154,7 @@ describe("Deck keys appearing and vanishing (spec §6.3 stable slots)", () => {
     d.tick(T0 + 1_000);
     expect(svgOf(slot(1))).toContain(">a<");
     expect(svgOf(slot(3))).toContain(">c<");
-    // b keeps slot 2 although no key shows it; the inbox counts it as "+1" (it needs attention)
-    expect(svgOf("mk2:0:0")).toContain("+1");
-    d.keyAppeared(layoutKey(slot(2)), T0 + 2_000);
-    d.tick(T0 + 2_000);
-    expect(svgOf(slot(2))).toContain(">b<");
+    expect(svgOf(slot(4))).toContain(">b<");
     expect(svgOf("mk2:0:0")).not.toContain("+1");
   });
 });
@@ -417,16 +414,11 @@ describe("Deck keys: hide time, reflow and immediate redraw", () => {
     const { d, svgOf } = deck(100);
     d.update(hubState({ sessions: abc() }), [], T0);
     d.tick(T0);
-    // b keeps slot 2 and starts waiting: "+1" while its key is hidden
-    const bWaits = [session("a"), waiting("b", T0 + 500), session("c")];
-    d.update(hubState({ sessions: bWaits }), [], T0 + 500);
     d.keyDisappeared(slot(2), T0 + 1_000);
     d.tick(T0 + 61_000);
-    expect(svgOf("mk2:0:0")).toContain("+1");
     expect(svgOf(slot(4))).not.toContain(">b<");
     d.tick(T0 + 61_001);
     expect(svgOf(slot(4))).toContain(">b<");
-    expect(svgOf("mk2:0:0")).not.toContain("+1");
   });
 
   it("a page switch of 30 s keeps every slot", () => {
@@ -610,11 +602,73 @@ describe("Deck reservations and press edge cases", () => {
     expect(successorSlot(reason, 10_100)).toContain(">c<");
   });
 
-  it("extra key: short press opens the usage settings page (Plan 7), long does nothing", () => {
+  it("extra key: short press opens the usage settings page, long does nothing", () => {
     const { d } = deck();
     d.update(hubState(), [], T0);
     expect(d.press("mk2:0:3", "short", T0)).toEqual([{ type: "open_usage" }]);
     expect(d.press("mk2:0:3", "long", T0)).toEqual([]);
+  });
+
+  describe("keys showing Sign in", () => {
+    const signedOut = (over: Partial<HubState["limits"]> = {}) => {
+      const { d } = deck();
+      d.update(
+        hubState({
+          limits: { fiveHour: null, sevenDay: null, extra: null, auth: "expired", ...over },
+        }),
+        [],
+        T0,
+      );
+      return d;
+    };
+    const extraUsage = (enabled: boolean): HubState["limits"]["extra"] => ({
+      enabled,
+      monthlyLimit: 5_000,
+      usedCredits: 1_200,
+      currency: "EUR",
+      ...(enabled ? {} : { inactive: "disabled" as const }),
+      stale: false,
+      receivedAt: T0,
+    });
+
+    it("a short press on 5h, Week or Extra opens the instructions and does not refresh", () => {
+      const d = signedOut({ extra: extraUsage(true) });
+      for (const id of ["mk2:0:1", "mk2:0:2", "mk2:0:3"])
+        expect(d.press(id, "short", T0)).toEqual([{ type: "open_sign_in" }]);
+    });
+
+    it("a limit key that still has a reading opens the instructions as well", () => {
+      const d = signedOut({
+        fiveHour: {
+          id: "five_hour",
+          usedPct: 42,
+          resetsAt: null,
+          pacePct: null,
+          aheadOfPlan: false,
+          level: "neutral",
+          stale: false,
+          receivedAt: T0,
+          rolledOver: false,
+        },
+      });
+      expect(d.press("mk2:0:1", "short", T0)).toEqual([{ type: "open_sign_in" }]);
+    });
+
+    it("Extra without any data shows Sign in as well", () => {
+      expect(signedOut().press("mk2:0:3", "short", T0)).toEqual([{ type: "open_sign_in" }]);
+    });
+
+    it("a long press still does nothing", () => {
+      const d = signedOut();
+      for (const id of ["mk2:0:1", "mk2:0:2", "mk2:0:3"])
+        expect(d.press(id, "long", T0)).toEqual([]);
+    });
+
+    it("Extra showing why it is inactive keeps opening the usage settings", () => {
+      expect(signedOut({ extra: extraUsage(false) }).press("mk2:0:3", "short", T0)).toEqual([
+        { type: "open_usage" },
+      ]);
+    });
   });
 
   it("pressing before the first hub update does nothing", () => {
@@ -741,7 +795,7 @@ describe("contentSignature", () => {
   });
 });
 
-describe("Deck slot promotion (Plan 7)", () => {
+describe("Deck slot promotion", () => {
   const types = (cmds: DeckCommand[]) =>
     cmds.map((c) => ("session" in c ? `${c.type}:${c.session.key.sessionId}` : c.type));
 

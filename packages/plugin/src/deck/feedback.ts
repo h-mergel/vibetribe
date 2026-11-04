@@ -1,5 +1,11 @@
 import type { KeyFlash } from "@vibetribe/render";
 
+/** Pressed-key feedback: "Open…" outlasts the ~2 s Claude Desktop needs to show the session. */
+export const FLASH_MS: Record<KeyFlash, number> = { jumping: 2_500, no_target: 2_000 };
+
+/** Status tap: all four sources for 5 s (handoff §4.3). */
+export const STATUS_EXPANDED_MS = 5_000;
+
 /**
  * Press feedback per key: a flash ("Open…", "No link") for the session the press acted on, and a
  * status key that lists all sources. Time is always a parameter.

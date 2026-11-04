@@ -12,7 +12,7 @@ import { ACTION_UUIDS } from "./ids";
 
 /**
  * SDK adapter for one key role. `manifestId` is what `registerAction` routes on; the `@action`
- * decorator only sets this same field, so one class serves all six roles without subclasses.
+ * decorator only sets this same field, so one class serves all roles without subclasses.
  */
 export class VibeTribeAction extends SingletonAction {
   override readonly manifestId: string;
@@ -40,6 +40,9 @@ export class VibeTribeAction extends SingletonAction {
       device: ev.action.device.id,
       row: c.row,
       column: c.column,
+      ...(this.#role === "home"
+        ? { deviceType: ev.action.device.type, back: ev.payload.settings.back === true }
+        : {}),
     });
   }
 

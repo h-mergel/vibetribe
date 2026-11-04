@@ -1,4 +1,9 @@
-import { type InboxSummary, needsAttention, waitingInOrder } from "@vibetribe/core";
+import {
+  type InboxSummary,
+  needsAttention,
+  type SessionView,
+  waitingInOrder,
+} from "@vibetribe/core";
 import {
   type Health,
   type HubState,
@@ -9,6 +14,8 @@ import {
 } from "@vibetribe/hub";
 import {
   extraTile,
+  type HomeTile,
+  homeTile,
   inboxTile,
   type KeyFlash,
   limitTile,
@@ -17,7 +24,9 @@ import {
   slotTile,
   type Tile,
 } from "@vibetribe/render";
+import { BUNDLED_PROFILE, BUNDLED_PROFILE_DEVICE_TYPE } from "../ids";
 import type { KeyPlacement } from "./keys";
+import type { DeckCommand } from "./press";
 
 /** What the inbox key shows (`inboxView`). */
 export interface InboxView {
@@ -112,6 +121,50 @@ export function inboxView(
 }
 
 /**
+ * What a short press on a limit key asks for: the sign-in instructions while the key shows
+ * "Sign in"; otherwise a refresh (5h, Week) or the page where the user switches Extra Usage on or off.
+ */
+export function limitKeyPress(
+  role: "limit5h" | "limitWeek" | "extra",
+  { extra, auth }: HubState["limits"],
+): DeckCommand {
+  if (role === "extra") {
+    return { type: extraTile(extra, auth).note === "Sign in" ? "open_sign_in" : "open_usage" };
+  }
+  return { type: auth === "expired" ? "open_sign_in" : "refresh_usage" };
+}
+
+/** The worst the status key would report; its alert counts as down. */
+export function homeHealth(state: HubState): NonNullable<HomeTile["health"]> {
+  const { rows, alert } = statusTile(state);
+  if (alert || rows.some((r) => r.health === "missing")) return "missing";
+  return rows.some((r) => r.health === "stale") ? "stale" : "ok";
+}
+
+/**
+ * The session whose breath each visible home key shows: one entry per key, none while the most
+ * urgent session does not breathe. The key inside the bundled profile only shows its arrow.
+ */
+export function breathingHomes(
+  keys: readonly KeyPlacement[],
+  views: SessionView[],
+  animated: ReadonlySet<string>,
+): SessionView[] {
+  const top = waitingInOrder(views)[0];
+  if (!top || !animated.has(top.id)) return [];
+  return keys.filter((k) => k.role === "home" && !k.back).map(() => top);
+}
+
+/** A short press on a home key: back, into the bundled profile, or none exists for this device. */
+export function homeKeyPress(key: KeyPlacement): DeckCommand {
+  const target = { keyId: key.id, device: key.device };
+  if (key.back) return { type: "switch_profile", ...target };
+  return key.deviceType === BUNDLED_PROFILE_DEVICE_TYPE
+    ? { type: "switch_profile", ...target, profile: BUNDLED_PROFILE }
+    : { type: "no_profile", ...target };
+}
+
+/**
  * The tile one key shows for the given hub state. `slotIndex` is the key's position among the
  * slot keys (ignored for other roles). Pure; the deck decides when to render.
  */
@@ -150,5 +203,8 @@ export function tileFor(
       return extraTile(limits.extra, limits.auth, ctx.timeZone);
     case "status":
       return statusTile(state, ctx.expanded?.has(key.id) ?? false);
+    case "home":
+      if (key.back) return { kind: "back" };
+      return { ...homeTile(state.sessions, ctx), health: homeHealth(state) };
   }
 }

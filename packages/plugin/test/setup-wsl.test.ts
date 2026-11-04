@@ -69,9 +69,9 @@ describe("wslSetupResult", () => {
   });
 
   it("shows the reporter's own error line, else the exit code; wsl.exe's own codes get a plain message", () => {
-    expect(result(1, "\n/home/jane/.claude/settings.json is not valid JSON.\n\n")).toEqual({
+    expect(result(1, "\n/home/h2k/.claude/settings.json is not valid JSON.\n\n")).toEqual({
       ok: false,
-      text: "/home/jane/.claude/settings.json is not valid JSON.",
+      text: "/home/h2k/.claude/settings.json is not valid JSON.",
     });
     expect(result(1, " \n")).toEqual({ ok: false, text: "Setup in WSL (Debian) failed (exit 1)." });
     expect(result(4294967295).text).toBe(
@@ -83,7 +83,7 @@ describe("wslSetupResult", () => {
 describe("reasonOf", () => {
   it("skips the stack trace and Node's version footer", () => {
     const crash =
-      "file:///home/jane/.vibetribe/reporter.mjs:12\nSyntaxError: Unexpected token '?'\n    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:146:18)\n    at callTranslator (node:internal/modules/esm/loader:310:14)\n\nNode.js v12.22.9\n";
+      "file:///home/h2k/.vibetribe/reporter.mjs:12\nSyntaxError: Unexpected token '?'\n    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:146:18)\n    at callTranslator (node:internal/modules/esm/loader:310:14)\n\nNode.js v12.22.9\n";
     expect(reasonOf(crash)).toBe("SyntaxError: Unexpected token '?'");
   });
 

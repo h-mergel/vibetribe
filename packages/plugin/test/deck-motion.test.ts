@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { STATUS_EXPANDED_MS } from "../src/deck/deck";
+import { STATUS_EXPANDED_MS } from "../src/deck/feedback";
 import { contentSignature } from "../src/deck/frame";
 import type { KeyPlacement } from "../src/deck/keys";
 import { WORKING_TICK_MS } from "../src/deck/motion";

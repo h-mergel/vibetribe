@@ -48,7 +48,7 @@ describe("manifest", () => {
     );
     expect(manifest.Actions).toHaveLength(Object.keys(ACTION_UUIDS).length);
     expect(new Set(manifest.Actions.map((a) => a.UUID)).size).toBe(manifest.Actions.length);
-    expect(manifest.Version).toBe("1.0.0.0");
+    expect(manifest.Version).toBe("1.0.1.0");
     expect(manifest.Author).toBe("h2k.dev");
     expect(manifest.URL).toBe("https://github.com/h-mergel/vibetribe");
     expect(manifest.SupportURL).toBe("https://github.com/h-mergel/vibetribe/issues");
@@ -76,6 +76,8 @@ describe("property inspector", () => {
     );
     expect(html).toContain(`const SLOT = "${ACTION_UUIDS.slot}";`);
     expect(html).toContain('$("pinned").hidden = action !== SLOT;');
+    expect(html).toContain(`const HOME = "${ACTION_UUIDS.home}";`);
+    expect(html).toContain('$("home").hidden = action !== HOME;');
     expect(html).toContain(`const KEY = "${PREFER_PINNED_KEY}";`);
     // unticked only when saved as false: the same default as the plugin
     expect(html).toContain("box.checked = settings[KEY] !== false;");

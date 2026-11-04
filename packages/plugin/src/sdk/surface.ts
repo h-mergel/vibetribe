@@ -6,6 +6,7 @@ export interface SdkLike {
     getActionById(id: string): SdkAction | undefined;
   };
   system: { openUrl(url: string): Promise<void> };
+  profiles: { switchToProfile(deviceId: string, profile?: string): Promise<void> };
 }
 
 export interface SdkAction {
@@ -14,10 +15,23 @@ export interface SdkAction {
 
 export interface SdkKey {
   setImage(image: string): Promise<void>;
+  showAlert(): Promise<void>;
 }
 
-/** The only place that talks to the Stream Deck app: images out, URLs out. Never throws. */
+/** The only place that talks to the Stream Deck app: images, URLs, profiles. Never throws. */
 export function createSdkSurface(sd: SdkLike, log: (line: string) => void): DeckSurface {
+  const showAlert = (keyId: string): void => {
+    try {
+      const action = sd.actions.getActionById(keyId);
+      if (!action?.isKey()) {
+        log(`showAlert ${keyId} dropped: action not visible`);
+        return;
+      }
+      action.showAlert().catch((err) => log(`showAlert ${keyId} rejected: ${String(err)}`));
+    } catch (err) {
+      log(`showAlert ${keyId} failed: ${String(err)}`);
+    }
+  };
   return {
     setImage(keyId, image) {
       try {
@@ -38,6 +52,19 @@ export function createSdkSurface(sd: SdkLike, log: (line: string) => void): Deck
         sd.system.openUrl(url).catch((err) => log(`openUrl rejected: ${String(err)}`));
       } catch (err) {
         log(`openUrl failed: ${String(err)}`);
+      }
+    },
+    showAlert,
+    switchProfile(keyId, device, profile) {
+      const name = profile ?? "previous";
+      try {
+        sd.profiles.switchToProfile(device, profile).catch((err) => {
+          log(`switchProfile ${name} rejected: ${String(err)}`);
+          showAlert(keyId);
+        });
+      } catch (err) {
+        log(`switchProfile ${name} failed: ${String(err)}`);
+        showAlert(keyId);
       }
     },
   };

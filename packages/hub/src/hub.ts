@@ -96,7 +96,8 @@ export class Hub {
     const id = keyOf(session.key);
     if (!this.#store.view(at).some((v) => keyOf(v.key) === id)) return;
     this.#store.apply({ type: "seen", key: session.key, hostKind: session.hostKind, at });
-    if (session.key.host === REMOTE_HOST) this.#remote.ack(session.key.sessionId);
+    if (session.key.host === REMOTE_HOST && this.#remote.ack(session.key.sessionId, at))
+      this.#planRemote();
     this.#notify();
   }
 
@@ -189,9 +190,9 @@ export class Hub {
     this.#notify();
   }
 
-  usageExpired(): void {
+  usageExpired(message = "login expired"): void {
     this.#limits.setAuthExpired();
-    this.markError("usage", "login expired");
+    this.markError("usage", message);
   }
 
   markError(source: string, message: string): void {

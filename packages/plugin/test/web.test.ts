@@ -1,7 +1,15 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { isAllowedWebUrl, openWebPage, USAGE_SETTINGS_URL } from "../src/web";
+import { isAllowedWebUrl, openWebPage, SIGN_IN_HELP_URL, USAGE_SETTINGS_URL } from "../src/web";
 
-describe("allow-listed web pages (Extra key)", () => {
+describe("allow-listed web pages", () => {
+  it("allows the sign-in instructions, whose anchor is a README heading", () => {
+    expect(SIGN_IN_HELP_URL).toBe("https://github.com/h-mergel/vibetribe#sign-in");
+    expect(isAllowedWebUrl(SIGN_IN_HELP_URL)).toBe(true);
+    const readme = readFileSync(new URL("../../../README.md", import.meta.url), "utf8");
+    expect(readme).toMatch(/^## Sign in$/m);
+  });
+
   it("opens exactly the usage settings page through the surface", () => {
     const urls: string[] = [];
     const lines: string[] = [];

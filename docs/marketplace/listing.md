@@ -16,11 +16,12 @@ Running several Claude Code sessions at once? VibeTribe shows each one on its ow
 
 - Sessions from Windows, WSL, the Code tab in Claude Desktop and Remote Control sessions on other machines
 - Calm until you are needed: only sessions that need you get a thick frame; a new request breathes briefly
+- One live key for your main screen: a circle of dots shows who is waiting and how many; a press opens the ready-made VibeTribe profile, and its Back key returns you
 - Your 5-hour limit and weekly limit with a pace marker, and extra usage against your monthly cap
 - Every state in color, shape and word, so it works without color vision too
 - Local: the plugin is its own hub on 127.0.0.1. No telemetry, no prompts leave your machine
 
-**Setup:** after installing, click any VibeTribe key in the Stream Deck app and choose "Set up hooks". Nothing on your machine changes before that click.
+**Setup:** after installing, drag the VibeTribe key onto your main screen, click it in the Stream Deck app and choose "Set up hooks". Your Claude settings stay untouched until that click, and installing never switches your profile.
 
 **What VibeTribe reads and changes**
 
@@ -30,7 +31,7 @@ Running several Claude Code sessions at once? VibeTribe shows each one on its ow
 - Runs a small HTTP server on 127.0.0.1 only, protected by a token.
 - Uses interfaces of Claude Code and Claude Desktop that are not documented; an update of either can break parts of VibeTribe until it is updated.
 
-**Requirements:** Windows 10 or later, Stream Deck app 7.1 or later, a Stream Deck MK.2 (other models work, but are not designed for), Claude Code or Claude Desktop signed in. Sessions in WSL need Node.js 20 or later inside WSL.
+**Requirements:** Windows 10 or later, Stream Deck app 7.1 or later, a Stream Deck MK.2 (other models work, but are not designed for), Claude Code signed in; limits and remote sessions need the `claude` CLI (Claude Desktop alone isn't enough). Sessions in WSL need Node.js 20 or later inside WSL.
 
 VibeTribe is an independent open-source project (MIT) and is not affiliated with, endorsed or sponsored by Anthropic. Claude and Claude Code are trademarks of Anthropic.
 
@@ -47,6 +48,6 @@ Developer Tools
 
 Windows only.
 
-## Release notes 1.0.0.0
+## Release notes 1.0.1.0
 
-First Marketplace release: set up Claude Code's hooks from the key settings, sessions from WSL with one more click, your default WSL distribution instead of a fixed one.
+First Marketplace release: a live key for your main screen that shows who is waiting, a ready-made profile with only VibeTribe keys behind it and a Back key, sign-in help on keys that show "Sign in", set up Claude Code's hooks from the key settings, sessions from WSL with one more click.

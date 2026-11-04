@@ -13,7 +13,7 @@ import type { KeyPlacement } from "./deck/keys";
 import type { DeckCommand, PressKind } from "./deck/press";
 import { InboxOpens } from "./jump/inbox-opens";
 import type { JumpOpener, JumpResult } from "./jump/opener";
-import { openWebPage, USAGE_SETTINGS_URL } from "./web";
+import { openWebPage, SIGN_IN_HELP_URL, USAGE_SETTINGS_URL } from "./web";
 
 /**
  * Port to the deck hardware (spec §3.1 `DeckSurface`); the SDK adapter and the memory surface implement it.
@@ -24,6 +24,10 @@ import { openWebPage, USAGE_SETTINGS_URL } from "./web";
 export interface DeckSurface {
   setImage(keyId: string, image: string): boolean;
   openUrl(url: string): void;
+  /** The SDK's alert (a triangle) on a key. */
+  showAlert(keyId: string): void;
+  /** `profile`: a name from the manifest; absent: the previous profile of that device. */
+  switchProfile(keyId: string, device: string, profile?: string): void;
 }
 
 /** What the SDK actions call; everything behind it is pure and clocked by the composition. */
@@ -196,6 +200,16 @@ export async function startVibeTribe(o: VibeTribeOptions): Promise<RunningVibeTr
         if (openWebPage(o.surface, USAGE_SETTINGS_URL, log))
           log(`open_usage: ${USAGE_SETTINGS_URL}`);
         break;
+      case "open_sign_in":
+        if (openWebPage(o.surface, SIGN_IN_HELP_URL, log)) log(`open_sign_in: ${SIGN_IN_HELP_URL}`);
+        break;
+      case "switch_profile":
+        o.surface.switchProfile(cmd.keyId, cmd.device, cmd.profile);
+        break;
+      case "no_profile":
+        log(`home key ${cmd.keyId}: no bundled profile for device ${cmd.device}`);
+        o.surface.showAlert(cmd.keyId);
+        break;
       case "jump":
         void jump(cmd.session, cmd.url, cmd.markSeen);
         break;
@@ -275,19 +289,4 @@ export async function startVibeTribe(o: VibeTribeOptions): Promise<RunningVibeTr
       return stopping;
     },
   };
-}
-
-/** Surface without hardware: remembers the last image per key (headless mode, tests). */
-export class MemorySurface implements DeckSurface {
-  readonly images = new Map<string, string>();
-  readonly urls: string[] = [];
-
-  setImage(keyId: string, image: string): boolean {
-    this.images.set(keyId, image);
-    return true;
-  }
-
-  openUrl(url: string): void {
-    this.urls.push(url);
-  }
 }

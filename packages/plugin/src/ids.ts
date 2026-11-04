@@ -11,4 +11,11 @@ export const ACTION_UUIDS: Record<KeyRole, string> = {
   limitWeek: `${PLUGIN_UUID}.limit-week`,
   extra: `${PLUGIN_UUID}.extra`,
   status: `${PLUGIN_UUID}.status`,
+  home: `${PLUGIN_UUID}.home`,
 };
+
+/** `Name` of the manifest's profile entry; `switchToProfile` takes exactly this string. */
+export const BUNDLED_PROFILE = "profiles/VibeTribe";
+
+/** `DeviceType` of that entry: 0 is the 15-key Stream Deck. Other devices have no profile. */
+export const BUNDLED_PROFILE_DEVICE_TYPE = 0;

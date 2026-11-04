@@ -108,7 +108,36 @@ export interface StatusTile {
   alert?: string | null;
 }
 
-export type Tile = SlotTile | EmptyTile | InboxTile | LimitTile | ExtraTile | StatusTile;
+/** The live key for the main screen: the logo's six dots, filled by the sessions. */
+export interface HomeTile {
+  kind: "home";
+  /** The most urgent waiting session on the larger top dot; null: nobody waits. */
+  top: {
+    state: SessionState;
+    /** Opacity while it breathes; absent or 1: solid. */
+    level?: number;
+  } | null;
+  /** Further sessions by priority, clockwise from the top dot; only five fit. */
+  others: SessionState[];
+  /** Number in the centre of the circle; 0 shows none. */
+  waiting: number;
+  /** Worst source health: stale adds a thin frame, missing a thick one. */
+  health?: "ok" | "stale" | "missing";
+}
+
+export interface BackTile {
+  kind: "back";
+}
+
+export type Tile =
+  | SlotTile
+  | EmptyTile
+  | InboxTile
+  | LimitTile
+  | ExtraTile
+  | StatusTile
+  | HomeTile
+  | BackTile;
 
 /** comfortable (default): fewer elements, larger type; compact: every mandatory content of the brief. */
 export type Variant = "comfortable" | "compact";

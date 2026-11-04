@@ -9,6 +9,7 @@ const rs = (id: string, over: Partial<RemoteSession> = {}): RemoteSession => ({
   title: id.slice(10),
   status: "idle",
   doneUnread: false,
+  quiet: true,
   at: null,
   ...over,
 });
@@ -414,12 +415,12 @@ describe("RemoteTracker", () => {
     const t = new RemoteTracker();
     const done = rs("session_01A", { doneUnread: true, at: T });
     t.plan([done], none, none, T);
-    t.ack("session_01A");
+    t.ack("session_01A", T);
     const present = new Set(["session_01A"]);
     expect(t.plan([done], none, present, T + 1).finished).toEqual([]);
     t.plan([], none, none, T + 2);
     expect(t.plan([done], none, none, T + 2 + TURN_MEMORY_MS + 1).finished).toHaveLength(1);
-    t.ack("session_01A");
+    t.ack("session_01A", T);
     t.forget("session_01A");
     expect(t.plan([done], none, present, T + 3 + TURN_MEMORY_MS).finished).toHaveLength(1);
   });
@@ -428,7 +429,7 @@ describe("RemoteTracker", () => {
     const t = new RemoteTracker();
     const present = new Set(["session_01A"]);
     t.plan([rs("session_01A", { doneUnread: true, at: T })], none, none, T);
-    t.ack("session_01A");
+    t.ack("session_01A", T);
     const bumped = t.plan(
       [rs("session_01A", { doneUnread: true, at: T + 5 })],
       none,
@@ -453,8 +454,8 @@ describe("RemoteTracker", () => {
       none,
       T,
     );
-    t.ack("session_01A");
-    t.ack("session_01N");
+    t.ack("session_01A", T);
+    t.ack("session_01N", T);
     t.plan([], none, none, T + 10);
     const back = t.plan(
       [rs("session_01A", { doneUnread: true, at: T + 5 }), rs("session_01N", { doneUnread: true })],

@@ -2,7 +2,7 @@
   "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
   "UUID": "dev.h2k.vibetribe",
   "Name": "VibeTribe",
-  "Version": "1.0.0.0",
+  "Version": "1.0.1.0",
   "Author": "h2k.dev",
   "Description": "Shows every Claude Code session, your usage limits and extra usage on the Stream Deck; one press opens the session.",
   "URL": "https://github.com/h-mergel/vibetribe",
@@ -25,7 +25,31 @@
       "MinimumVersion": "10"
     }
   ],
+  "Profiles": [
+    {
+      "Name": "profiles/VibeTribe",
+      "DeviceType": 0,
+      "Readonly": false,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    }
+  ],
   "Actions": [
+    {
+      "UUID": "dev.h2k.vibetribe.home",
+      "Name": "VibeTribe",
+      "Tooltip": "Live circle for your main screen: who is waiting, and how many. Press opens the full VibeTribe view.",
+      "Icon": "imgs/actions/home",
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/keys/home",
+          "ShowTitle": false
+        }
+      ]
+    },
     {
       "UUID": "dev.h2k.vibetribe.slot",
       "Name": "Session slot",

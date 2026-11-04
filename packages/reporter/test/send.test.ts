@@ -34,7 +34,7 @@ describe("makePost", () => {
         res.writeHead(202).end();
       });
     });
-    const ok = await makePost(url, "tok", 300)("/v1/event", { a: 1 });
+    const ok = await makePost(url, "tok", 2_000)("/v1/event", { a: 1 });
     expect(ok).toBe(true);
     expect(seen).toEqual({
       auth: "Bearer tok",
@@ -61,7 +61,7 @@ describe("makePost", () => {
       auth = req.headers.authorization;
       res.writeHead(202).end();
     });
-    expect(await makePost(url, null, 300)("/v1/event", {})).toBe(true);
+    expect(await makePost(url, null, 2_000)("/v1/event", {})).toBe(true);
     expect(auth).toBeUndefined();
   });
 

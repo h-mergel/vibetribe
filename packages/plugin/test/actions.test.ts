@@ -31,16 +31,19 @@ interface Opts {
   coordinates?: { row: number; column: number };
   multi?: boolean;
   isKey?: boolean;
+  deviceType?: number;
+  settings?: Record<string, unknown>;
 }
 const ev = <T>(o: Opts = {}): T =>
   ({
     action: {
       id: o.id ?? "k1",
-      device: { id: "dev1" },
+      device: { id: "dev1", type: o.deviceType },
       coordinates: o.coordinates,
       isKey: () => o.isKey ?? true,
       isInMultiAction: () => o.multi ?? false,
     },
+    payload: { settings: o.settings ?? {} },
   }) as unknown as T;
 
 function setup() {
@@ -65,6 +68,21 @@ describe("VibeTribeAction", () => {
     const { a, deck } = setup();
     a.onWillAppear(ev<WillAppearEvent>({ coordinates: { row: 1, column: 2 } }));
     expect(deck.appeared).toEqual([{ id: "k1", role: "slot", device: "dev1", row: 1, column: 2 }]);
+  });
+
+  it("the home key reports its device type and whether it is the back key", () => {
+    const deck = new FakeDeck();
+    const home = new VibeTribeAction("home", deck);
+    const coordinates = { row: 2, column: 4 };
+    home.onWillAppear(ev<WillAppearEvent>({ coordinates, deviceType: 0 }));
+    home.onWillAppear(
+      ev<WillAppearEvent>({ id: "k2", coordinates, deviceType: 7, settings: { back: true } }),
+    );
+    expect(home.manifestId).toBe(ACTION_UUIDS.home);
+    expect(deck.appeared).toEqual([
+      { id: "k1", role: "home", device: "dev1", row: 2, column: 4, deviceType: 0, back: false },
+      { id: "k2", role: "home", device: "dev1", row: 2, column: 4, deviceType: 7, back: true },
+    ]);
   });
 
   it("skips multi-action children, keys without coordinates and non-keys", () => {
@@ -118,7 +136,7 @@ describe("registerActions", () => {
     const registered: VibeTribeAction[] = [];
     registerActions(new FakeDeck(), (a) => registered.push(a as VibeTribeAction));
     expect(registered.map((a) => a.manifestId)).toEqual(KEY_ROLES.map((r) => ACTION_UUIDS[r]));
-    expect(registered).toHaveLength(6);
+    expect(registered).toHaveLength(7);
   });
 
   it("wires each action to its own role", () => {

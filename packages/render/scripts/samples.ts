@@ -1,5 +1,5 @@
 import type { SessionState, SessionView } from "@vibetribe/core";
-import { extraTile, inboxTile, limitTile, slotTile } from "../src/fromCore";
+import { extraTile, homeTile, inboxTile, limitTile, slotTile } from "../src/fromCore";
 import type { Tile } from "../src/model";
 import { REFERENCE_SAMPLES } from "./reference-samples";
 
@@ -38,6 +38,10 @@ const STATES: SessionState[] = [
 ];
 const bg = { count: 3, kinds: { shell: 2, agent: 1, monitor: 0, other: 0 }, stale: false };
 const still = { now: NOW, animated: false };
+const calmDeck = { now: NOW, animated: new Set<string>() };
+const HOME_MIX: SessionView[] = (
+  ["needs_permission", "error", "done_unseen", "working", "idle", "no_signal", "idle"] as const
+).map((state, i) => ({ ...base, id: `g${i}`, state }));
 
 /** Tiles built from core views the way the deck builds them (English notes, seconds, flashes). */
 export const CORE_SAMPLES: [string, Tile][] = [
@@ -227,6 +231,29 @@ export const CORE_SAMPLES: [string, Tile][] = [
       TZ,
     ),
   ],
+  ["core-home-empty", homeTile([], calmDeck)],
+  ...(["needs_permission", "needs_input", "error", "done_unseen"] as const).map(
+    (state): [string, Tile] => [`core-home-${state}`, homeTile([{ ...base, state }], calmDeck)],
+  ),
+  ["core-home-working", homeTile([{ ...base, state: "working" }], calmDeck)],
+  [
+    "core-home-breath-low",
+    homeTile([{ ...base, state: "needs_input", episodeSince: NOW }], {
+      now: NOW,
+      animated: new Set([base.id]),
+    }),
+  ],
+  ["core-home-full", homeTile(HOME_MIX, calmDeck)],
+  [
+    "core-home-count-large",
+    homeTile(
+      Array.from({ length: 100 }, (_, i) => ({ ...base, id: `g${i}`, state: "error" as const })),
+      calmDeck,
+    ),
+  ],
+  ["core-home-stale", { ...homeTile(HOME_MIX, calmDeck), health: "stale" }],
+  ["core-home-down", { ...homeTile(HOME_MIX, calmDeck), health: "missing" }],
+  ["core-back", { kind: "back" }],
   [
     "core-status-expanded-alert",
     {

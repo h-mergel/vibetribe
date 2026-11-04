@@ -3,7 +3,6 @@ import { INGRESS_TOKEN_MESSAGE, ingressPortError } from "@vibetribe/hub";
 import type { HookEnvelope } from "@vibetribe/protocol";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  MemorySurface,
   parseMaxFrames,
   parseVariant,
   pollNowLine,
@@ -11,6 +10,8 @@ import {
   startVibeTribe,
 } from "../src/compose";
 import { defaultMk2Layout } from "../src/deck/keys";
+import { BUNDLED_PROFILE, BUNDLED_PROFILE_DEVICE_TYPE } from "../src/ids";
+import { MemorySurface } from "../src/memory-surface";
 import { svgFromDataUrl } from "./helpers";
 
 let app: RunningVibeTribe | null = null;
@@ -53,6 +54,44 @@ const envelope = (name: string, id = "sim-1", cwd = "/home/h/atlas"): HookEnvelo
 const layout = defaultMk2Layout();
 const firstKey = layout[0] as ReturnType<typeof defaultMk2Layout>[number];
 const text = (s: MemorySurface, id: string): string => svgFromDataUrl(s.images.get(id) ?? "") ?? "";
+
+describe("home key", () => {
+  const start = async (lines: string[], surface: MemorySurface) => {
+    app = await startVibeTribe({
+      surface,
+      hub: { port: 0, token: "t", sources: [], usage: null },
+      log: (l) => lines.push(l),
+      tickMs: 10_000,
+    });
+    return app;
+  };
+  const key = { role: "home", device: "dev1", row: 0, column: 0 } as const;
+
+  it("switches to the bundled profile and back through the surface", async () => {
+    const surface = new MemorySurface();
+    const running = await start([], surface);
+    running.keyAppeared({ ...key, id: "open", deviceType: BUNDLED_PROFILE_DEVICE_TYPE });
+    running.keyAppeared({ ...key, id: "back", column: 1, back: true });
+    running.press("open", "short");
+    running.press("back", "short");
+    expect(surface.switches).toEqual([
+      { keyId: "open", device: "dev1", profile: BUNDLED_PROFILE },
+      { keyId: "back", device: "dev1", profile: undefined },
+    ]);
+    expect(surface.alerts).toEqual([]);
+  });
+
+  it("no matching profile: logs it and shows the alert, never a silent failure", async () => {
+    const surface = new MemorySurface();
+    const lines: string[] = [];
+    const running = await start(lines, surface);
+    running.keyAppeared({ ...key, id: "open", deviceType: 7 });
+    running.press("open", "short");
+    expect(surface.switches).toEqual([]);
+    expect(surface.alerts).toEqual(["open"]);
+    expect(lines.some((l) => l.includes("no bundled profile"))).toBe(true);
+  });
+});
 
 describe("startVibeTribe", () => {
   it("renders hub changes onto the surface, serves the mirror, executes seen and open_debug", async () => {
@@ -153,6 +192,47 @@ describe("startVibeTribe", () => {
     await until(() => fetches === 2);
   });
 
+  it("with an expired login a limit key opens the sign-in instructions without polling", async () => {
+    const surface = new MemorySurface();
+    const logs: string[] = [];
+    let fetches = 0;
+    let clock = 1_000_000;
+    app = await startVibeTribe({
+      surface,
+      hub: {
+        port: 0,
+        token: "t",
+        sources: [],
+        usage: {
+          refresher: { request: async () => false } as never,
+          ports: {
+            readCredentials: async () => ({ accessToken: "a", expiresAt: 10 ** 15 }),
+            fetchUsage: async () => {
+              fetches++;
+              return { kind: "unauthorized" };
+            },
+            loadCache: async () => null,
+            saveCache: async () => {},
+          },
+        },
+      },
+      now: () => clock,
+      log: (l) => logs.push(l),
+      tickMs: 10,
+    });
+    await until(() => fetches === 1);
+    await settle();
+    app.keyAppeared(layout[1] as ReturnType<typeof defaultMk2Layout>[number]);
+    await until(() => text(surface, "mk2:0:1").includes(">Sign in<"));
+    clock += 300_000;
+    app.press("mk2:0:1", "short");
+    await settle();
+    expect(surface.urls).toEqual(["https://github.com/h-mergel/vibetribe#sign-in"]);
+    expect(logs).toContain("open_sign_in: https://github.com/h-mergel/vibetribe#sign-in");
+    expect(logs.filter((l) => l.startsWith("refresh_usage"))).toEqual([]);
+    expect(fetches).toBe(1);
+  });
+
   it("pollNowLine names every skip reason", () => {
     expect(pollNowLine({ started: true })).toBe("refresh_usage: polling");
     expect(pollNowLine({ started: false, reason: "recent", sinceLastMs: 59_600 })).toBe(
@@ -168,7 +248,12 @@ describe("startVibeTribe", () => {
 
   it("a refusing surface leaves the key without an image and keeps ticking", async () => {
     app = await startVibeTribe({
-      surface: { setImage: () => false, openUrl: () => {} },
+      surface: {
+        setImage: () => false,
+        openUrl: () => {},
+        showAlert: () => {},
+        switchProfile: () => {},
+      },
       hub: { port: 0, token: "t", sources: [], usage: null },
       log: () => {},
       tickMs: 10,
@@ -214,6 +299,8 @@ describe("startVibeTribe", () => {
           urls.push(u);
           if (urls.length === 1) throw new Error("no browser");
         },
+        showAlert: () => {},
+        switchProfile: () => {},
       },
       hub: { port: 0, token: "t", sources: [], usage: null },
       log: (l) => lines.push(l),
@@ -487,6 +574,8 @@ describe("startVibeTribe breathing on the real refresh loop", () => {
           return true;
         },
         openUrl: () => {},
+        showAlert: () => {},
+        switchProfile: () => {},
       },
       hub: { port: 0, token: "t", sources: [], usage: null },
       log: () => {},

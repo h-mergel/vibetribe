@@ -30,7 +30,14 @@ describe("startHub remote loop", () => {
           fetchSessions: async () => ({
             kind: "ok",
             sessions: [
-              { id: "session_01A", title: "Mac", status: "busy", doneUnread: false, at: null },
+              {
+                id: "session_01A",
+                title: "Mac",
+                status: "busy",
+                doneUnread: false,
+                quiet: false,
+                at: null,
+              },
             ],
           }),
         },
