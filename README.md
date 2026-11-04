@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/readme/banner.png" alt="VibeTribe – Claude Code sessions on a Stream Deck MK.2" width="100%">
+  <img src="docs/readme/hero.png" alt="VibeTribe on a Stream Deck MK.2: limits, inbox and session keys, some asking for approval or input" width="100%">
 </p>
 
 <p align="center">
@@ -62,6 +62,10 @@ The origin is always in the bottom right: `WIN`, `WSL` or `REM`. Waiting time re
 </p>
 
 ## Layout and keys
+
+<p align="center">
+  <img src="docs/readme/deck.png" alt="A Stream Deck MK.2 with VibeTribe keys, labelled: inbox, limits, status, working and idle sessions, sessions that need you, and finished ones" width="100%">
+</p>
 
 VibeTribe ships seven actions (category "VibeTribe"). Two ways to use them:
 
@@ -315,6 +319,6 @@ Designed and built together with [Claude Code](https://claude.com/claude-code).
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE), except the Stream Deck device in `docs/readme/hero.png` and `docs/readme/deck.png`: that photo is Elgato's, from its press kit, and isn't covered by this licence.
 
 <sub>VibeTribe is an independent project and is not affiliated with, endorsed or sponsored by Anthropic or Elgato. Claude and Claude Code are trademarks of Anthropic; Stream Deck is a trademark of Corsair Memory, Inc.</sub>
