@@ -170,7 +170,7 @@ describe("mapRemoteSession", () => {
     expect(mapRemoteSession("cse_01Abc")).toBeNull();
   });
 
-  it("normalizes the id to the session_ form (R3)", () => {
+  it("normalizes the id to the session_ form", () => {
     expect(mapRemoteSession(live({ id: "cse_01Abc" }))?.id).toBe("session_01Abc");
     expect(mapRemoteSession(live({ id: "session_01Abc" }))?.id).toBe("session_01Abc");
   });

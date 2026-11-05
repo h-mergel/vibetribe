@@ -1,6 +1,6 @@
 import { isObj } from "@vibetribe/protocol";
 
-/** The global setting behind "Prefer pinned sessions" (ui/slot.html writes the same key). */
+/** The global setting behind "Prefer pinned sessions" (ui/vibetribe.html writes the same key). */
 export const PREFER_PINNED_KEY = "preferPinned";
 
 /** Sessions pinned in Claude Desktop keep their slots until the user unticks the box. */

@@ -65,7 +65,7 @@ describe("slotTile", () => {
     expect(t.wait).toBe(42);
   });
 
-  it("an unseen done_unseen asks for a static thick frame (R9, handoff v2; never animated, R11)", () => {
+  it("an unseen done_unseen asks for a static thick frame (handoff v2; never animated)", () => {
     const done = { ...base, state: "done_unseen" as const, episodeSince: 0, episodeSeen: false };
     // core animatedIds never names a done_unseen, so the deck asks for animated: false
     const t = slotTile(done, { now: 300, animated: false });

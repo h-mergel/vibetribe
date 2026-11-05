@@ -226,7 +226,7 @@ describe("windowsHubConfig", () => {
   });
 });
 
-describe("backgroundFilePorts (Plan 7)", () => {
+describe("backgroundFilePorts", () => {
   it("reads null without a file, creates the folder and replaces the file atomically", async () => {
     const path = join(temp(), "vibetribe", "background.json");
     const ports = backgroundFilePorts(path);

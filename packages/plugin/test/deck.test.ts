@@ -960,7 +960,7 @@ describe("Deck slot promotion", () => {
     expect(svgOf(slot(3))).toContain(">c<");
   });
 
-  describe("Done counts as attention (user decision 2026-10-14, R9; never breathes, R11)", () => {
+  describe("Done counts as attention and never breathes", () => {
     const done = (id: string, since: number) =>
       session(id, { state: "done_unseen", episodeSince: since, episodeSeen: false });
 

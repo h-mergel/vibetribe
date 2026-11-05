@@ -86,7 +86,7 @@ describe("animatedIds", () => {
     ).toEqual(new Set());
   });
 
-  describe("an unseen done_unseen never breathes (handoff v2, user ruling R11)", () => {
+  describe("an unseen done_unseen never breathes (handoff v2)", () => {
     const done = (id: string, since: number) =>
       view({ id, state: "done_unseen", episodeSince: since, episodeSeen: false });
 
@@ -150,7 +150,7 @@ describe("frameWeight", () => {
     );
   });
 
-  it("thick for an unseen done_unseen; calm (normal, no thin) once seen (R9, handoff v2)", () => {
+  it("thick for an unseen done_unseen; calm (normal, no thin) once seen (handoff v2)", () => {
     expect(frameWeight(view({ state: "done_unseen", episodeSeen: false, episodeSince: 0 }))).toBe(
       "thick",
     );

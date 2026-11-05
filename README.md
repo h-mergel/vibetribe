@@ -117,7 +117,7 @@ A small **reporter** hooks into Claude Code via hooks and a statusline passthrou
 | `hub` | the hub: ingress, session sources, usage, remote |
 | `plugin` | Stream Deck adapter, jump, composition root |
 
-Architecture: ports & adapters, dependencies point inward only (`plugin → render → core`; the plugin also imports `@vibetribe/reporter/setup`, [ADR 0011](docs/adr/0011-einrichtung-aus-dem-plugin.md)). Decisions are recorded in [`docs/adr/`](docs/adr/).
+Architecture: ports & adapters, dependencies point inward only (`plugin → render → core`; the plugin also imports `@vibetribe/reporter/setup`, [ADR 0011](docs/adr/0011-setup-from-the-plugin.md)). Decisions are recorded in [`docs/adr/`](docs/adr/).
 
 ## Requirements
 
@@ -303,7 +303,7 @@ pnpm drift            # read-only check of every undocumented interface on this 
 pnpm e2e:live --spend-tokens  # one real Claude turn on Haiku against the running hub (opt-in)
 ```
 
-In headless mode you press keys via stdin (`press mk2:1:0`, `long mk2:1:0`); a mirror of the deck is at `/debug/keys`. More: [spec](docs/superpowers/specs/2026-10-10-vibetribe-design.md) · [ADRs](docs/adr/) · [design handoff](docs/design/handoff-2026-10-13/HANDOFF.md).
+In headless mode you press keys via stdin (`press mk2:1:0`, `long mk2:1:0`); a mirror of the deck is at `/debug/keys`. More: [spec](docs/superpowers/specs/2026-10-10-vibetribe-design.md) · [ADRs](docs/adr/) · [design handoff](docs/design/handoff-2026-10-13/HANDOFF.md) · [command reference](docs/development.md). The spec, design notes and research are in German.
 
 Work is test-driven with Conventional Commits; `pnpm check` must pass before every commit.
 

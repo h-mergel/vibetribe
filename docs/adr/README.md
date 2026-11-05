@@ -1,18 +1,18 @@
 # Architecture Decision Records
 
-Kurzes MADR-Format: Kontext, Entscheidung, Alternativen, Konsequenzen. Eine Datei pro Entscheidung, fortlaufend nummeriert, nie umschreiben – überholte ADRs bekommen Status „ersetzt durch NNNN“.
+Short MADR format: context, decision, alternatives, consequences. One file per decision, numbered in sequence. The content is never rewritten; superseded ADRs get the status "superseded by NNNN". Translations and link fixes don't count as rewriting.
 
-| # | Titel | Status |
+| # | Title | Status |
 |---|---|---|
-| 0001 | Plugin als Zentrale, Ports & Adapters | akzeptiert |
-| 0002 | Hooks über `settings.json` statt Claude-Code-Plugin | akzeptiert |
-| 0003 | Usage-Endpunkt als Hauptquelle für Limits | akzeptiert |
-| 0004 | Beobachtete Datei-Statusübergänge statt `statusUpdatedAt` | akzeptiert |
-| 0005 | Zentrale im Plugin, Deploy per Kopie, SVG-Data-URL | akzeptiert, teilweise ersetzt durch 0007 |
-| 0006 | Remote-Sessions über die Session-Liste des Kontos, `HostKind` `remote` | akzeptiert, teilweise ersetzt durch 0007 |
-| 0007 | Ersatzports und Port-Datei der Zentrale, keine Handler-Prüfung beim Start | akzeptiert |
-| 0008 | Angepinnte Sessions aus dem internen Zustand von Claude Desktop | akzeptiert, ergänzt durch 0009 |
-| 0009 | „Gesehen“ aus den Session-Dateien von Claude Desktop | akzeptiert |
-| 0010 | Drift-Prüfungen und ein Live-Test auf Haiku | akzeptiert |
-| 0011 | Einrichtung aus dem Plugin, Node-Kopie als Hook-Laufzeit, WSL per Klick | akzeptiert |
-| 0012 | Angesehene Remote-Fragen werden ruhig, bis die Session etwas Neues hat | akzeptiert |
+| [0001](0001-plugin-as-hub-ports-and-adapters.md) | Plugin as the hub, ports and adapters | accepted |
+| [0002](0002-hooks-via-settings-json.md) | Hooks via `settings.json` instead of a Claude Code plugin | accepted |
+| [0003](0003-usage-endpoint-as-main-source.md) | Usage endpoint as the main source for limits | accepted |
+| [0004](0004-observed-status-transitions.md) | Observed file status transitions instead of `statusUpdatedAt` | accepted |
+| [0005](0005-hub-in-plugin-deploy-by-copy.md) | Hub inside the plugin, deploy by copy, SVG data URLs | accepted, partly superseded by 0007 |
+| [0006](0006-remote-sessions-via-session-list.md) | Remote sessions via the account's session list, `HostKind` `remote` | accepted, partly superseded by 0007 |
+| [0007](0007-port-file-and-fallback-ports.md) | Fallback ports and a port file for the hub, no handler check at start | accepted |
+| [0008](0008-pins-from-claude-desktop.md) | Pinned sessions from Claude Desktop's internal state | accepted, extended by 0009 |
+| [0009](0009-seen-from-claude-desktop.md) | "Seen" from Claude Desktop's session files | accepted |
+| [0010](0010-drift-checks-and-live-test.md) | Drift checks and a live test on Haiku | accepted |
+| [0011](0011-setup-from-the-plugin.md) | Setup from the plugin, a Node copy as hook runtime, WSL by click | accepted |
+| [0012](0012-looked-at-remote-questions.md) | Remote questions that were looked at become calm until the session has news | accepted |

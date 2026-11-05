@@ -63,7 +63,7 @@ describe("PendingBackgrounds", () => {
   });
 });
 
-describe("Hub background restore (Plan 7)", () => {
+describe("Hub background restore", () => {
   it("a session with a job before the restart shows it again after the first scan", () => {
     const hub = new Hub();
     hub.restoreBackgrounds(savedFile, T);
@@ -93,7 +93,7 @@ describe("Hub background restore (Plan 7)", () => {
   });
 });
 
-describe("pending jobs of a host that never scans (R3)", () => {
+describe("pending jobs of a host that never scans", () => {
   const H = 3_600_000;
 
   it("keep their original save time when the file is rewritten, and expire after 6 h", () => {
@@ -140,7 +140,7 @@ describe("pending jobs of a host that never scans (R3)", () => {
   });
 });
 
-describe("serializeBackgrounds writes ids and kinds only (R3)", () => {
+describe("serializeBackgrounds writes ids and kinds only", () => {
   it("drops every other task field", () => {
     const dirty = {
       savedAt: T,

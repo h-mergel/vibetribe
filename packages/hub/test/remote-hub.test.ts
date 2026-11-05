@@ -189,7 +189,7 @@ describe("Hub.ingestRemote – seen and turns", () => {
     });
   });
 
-  it("R4 (ruling): a bare last_event_at bump on a seen, still unread idle session is no new turn", () => {
+  it("a bare last_event_at bump on a seen, still unread idle session is no new turn", () => {
     const hub = new Hub();
     hub.ingestRemote([rs("session_01A", { doneUnread: true, at: T - 5_000 })], T);
     const view = byId(hub, T).session_01A;
@@ -199,7 +199,7 @@ describe("Hub.ingestRemote – seen and turns", () => {
     expect(byId(hub, T + 20_000).session_01A?.state).toBe("idle");
   });
 
-  it("R3: a new turn after the user saw the last one is raised again once a poll saw it working", () => {
+  it("a new turn after the user saw the last one is raised again once a poll saw it working", () => {
     const hub = new Hub();
     hub.ingestRemote([rs("session_01A", { doneUnread: true, at: T - 5_000 })], T);
     const view = byId(hub, T).session_01A;
@@ -213,7 +213,7 @@ describe("Hub.ingestRemote – seen and turns", () => {
     });
   });
 
-  it("R4: after a disconnect flap a seen turn stays seen, an unseen turn comes back unseen", () => {
+  it("after a disconnect flap a seen turn stays seen, an unseen turn comes back unseen", () => {
     const hub = new Hub();
     const seen = rs("session_01Seen", { doneUnread: true, at: T - 5_000 });
     const unseen = rs("session_01Unseen", { doneUnread: true, at: T - 4_000 });
@@ -269,7 +269,7 @@ describe("Hub.ingestRemote – seen and turns", () => {
     });
   });
 
-  it("R5: after the no-signal removal a session that is still done + unread is raised again", () => {
+  it("after the no-signal removal a session that is still done + unread is raised again", () => {
     const hub = new Hub();
     const done = rs("session_01A", { doneUnread: true, at: T - 5_000 });
     hub.ingestRemote([done], T);
@@ -425,7 +425,7 @@ describe("RemoteTracker", () => {
     expect(t.plan([done], none, present, T + 3 + TURN_MEMORY_MS).finished).toHaveLength(1);
   });
 
-  it("R4 (ruling): a changed last_event_at alone is no new turn, a read in between makes one", () => {
+  it("a changed last_event_at alone is no new turn, a read in between makes one", () => {
     const t = new RemoteTracker();
     const present = new Set(["session_01A"]);
     t.plan([rs("session_01A", { doneUnread: true, at: T })], none, none, T);
@@ -446,7 +446,7 @@ describe("RemoteTracker", () => {
     ).toEqual([{ sessionId: "session_01A", at: T + 25 }]);
   });
 
-  it("R4 (ruling): a disconnect in between is no sign of a new turn", () => {
+  it("a disconnect in between is no sign of a new turn", () => {
     const t = new RemoteTracker();
     t.plan(
       [rs("session_01A", { doneUnread: true, at: T }), rs("session_01N", { doneUnread: true })],

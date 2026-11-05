@@ -83,7 +83,7 @@ describe("SlotTable", () => {
   });
 });
 
-describe("SlotTable promotion (Plan 7)", () => {
+describe("SlotTable promotion", () => {
   const ask = (id: string, at: number, over: Parameters<typeof view>[0] = {}) =>
     v(id, { state: "needs_permission", episodeSince: at, episodeSeen: false, ...over });
   const input = (id: string, at: number) =>
@@ -131,7 +131,7 @@ describe("SlotTable promotion (Plan 7)", () => {
     expect(ids(u)).toEqual(["a"]);
   });
 
-  it("an unseen done_unseen claims a slot like an alarm (R9); seen waiting sessions are calm", () => {
+  it("an unseen done_unseen claims a slot like an alarm; seen waiting sessions are calm", () => {
     const t = new SlotTable(2);
     step(t, [v("a"), v("b")], 0);
     const done = v("d", { state: "done_unseen", episodeSince: 5, episodeSeen: false });

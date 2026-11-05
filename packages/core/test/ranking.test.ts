@@ -34,7 +34,7 @@ describe("isAlarm and isWaitingState", () => {
 });
 
 describe("needsAttention", () => {
-  it("unseen needs_permission, needs_input, error and done_unseen (R9); nothing seen or calm", () => {
+  it("unseen needs_permission, needs_input, error and done_unseen; nothing seen or calm", () => {
     for (const state of ["needs_permission", "needs_input", "error", "done_unseen"] as const) {
       expect(needsAttention(view({ state, episodeSince: 1, episodeSeen: false }))).toBe(true);
       expect(needsAttention(view({ state, episodeSince: 1, episodeSeen: true }))).toBe(false);

@@ -147,7 +147,7 @@ describe("Deck inbox key", () => {
   });
 });
 
-describe("contentSignature (Plan 6 fields)", () => {
+describe("contentSignature (tile fields)", () => {
   it("ignores the working dot and the inbox clock, not the inbox position", () => {
     const slotTile = { kind: "slot", title: "a", state: "working", badge: "APP", tick: 0 } as const;
     expect(contentSignature({ ...slotTile, tick: 2 })).toBe(contentSignature(slotTile));

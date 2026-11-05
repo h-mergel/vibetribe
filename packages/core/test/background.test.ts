@@ -7,7 +7,7 @@ const local = (store: SessionStore, at: number) =>
 const shell = { id: "b1", kind: "shell" as const };
 const agent = { id: "a1", kind: "agent" as const };
 
-describe("SessionStore background records (Plan 7)", () => {
+describe("SessionStore background records", () => {
   it("lists local sessions with jobs and their change time; remote and job-free sessions are left out", () => {
     const store = new SessionStore();
     local(store, 0);

@@ -43,7 +43,7 @@ function frameOf(svg: string): Frame {
   };
 }
 
-describe.each(VARIANTS)("frame inset for the hardware bezel, R12 (%s)", (variant) => {
+describe.each(VARIANTS)("frame inset for the hardware bezel (%s)", (variant) => {
   it.each(Object.entries(TILES))("%s: outer edge at 2 px, clear of the safe area", (_, t) => {
     const f = frameOf(render(t.tile, { variant }));
     const half = f.sw / 2;
