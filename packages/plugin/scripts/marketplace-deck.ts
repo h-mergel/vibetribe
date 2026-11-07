@@ -50,11 +50,12 @@ const calm = (
   detail: string | null = null,
 ): Tile => ({ kind: "slot", state, title, badge, detail, tick: 1 });
 
-/** In reading order, in the plugin's default layout. */
+/** In reading order, as in the ready-made profile, with one session in every state. */
 export const DECK_TILES: readonly Tile[] = [
+  { kind: "back" },
   {
     kind: "inbox",
-    waiting: 5,
+    waiting: 4,
     top: { title: "Login Flow", state: "needs_permission", wait: 42 },
     overflow: 0,
   },
@@ -78,16 +79,15 @@ export const DECK_TILES: readonly Tile[] = [
       { source: "LIM", health: "ok" },
     ],
   },
-  calm("working", "API Tests", "WSL", "Bash"),
-  calm("working", "Build Script", "WIN", "Edit"),
-  calm("idle", "Data Import", "WSL"),
-  calm("working", "Bug Triage", "REM", "Read"),
-  calm("idle", "Theme Colors", "WIN"),
   slot("needs_permission", "Login Flow", "WIN", 42),
   slot("needs_input", "Spec Review", "WSL", 95),
-  slot("error", "Docs Update", "REM", 180, "Timeout"),
+  slot("error", "Docs Update", "REM", 180, "Server"),
   slot("done_unseen", "Release Notes", "WIN", 65),
-  slot("done_unseen", "Unit Tests", "WSL", 240),
+  { kind: "slot", state: "throttled", title: "Data Import", badge: "WSL" },
+  calm("working", "API Tests", "WSL", "Bash"),
+  { kind: "slot", state: "background", title: "Build Script", badge: "WIN", bgCount: 3 },
+  calm("idle", "Theme Colors", "WIN"),
+  { kind: "slot", state: "no_signal", title: "Bug Triage", badge: "REM" },
 ];
 
 /** The screen of a key in a picture of the given size. */

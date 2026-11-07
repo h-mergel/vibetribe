@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/readme/hero.png" alt="VibeTribe on a Stream Deck MK.2: limits, inbox and session keys, some asking for approval or input" width="100%">
+  <img src="docs/readme/hero.png" alt="VibeTribe's ready-made profile on a Stream Deck MK.2: Back, inbox, limits, status and one session key in each of the nine states" width="100%">
 </p>
 
 <p align="center">
@@ -19,7 +19,7 @@
 ---
 
 <p align="center">
-  <img src="docs/readme/demo.gif" alt="Animated deck: a session switches to Approve and its key breathes, one press shows Open… and the key goes quiet" width="640">
+  <img src="docs/readme/demo.gif" alt="Animated deck: the live key on a main screen fills up as sessions need you, one press opens the profile with all nine states, another jumps to a session and goes quiet, Back returns to your own keys" width="640">
 </p>
 
 ## Why
@@ -33,10 +33,26 @@ Run a few Claude Code sessions in parallel and you quickly lose track: which one
 - **Limits at a glance:** 5-hour and weekly limits with a pace marker, extra usage against your monthly cap.
 - **Local:** the plugin is its own hub. No telemetry, no prompts, no separate service.
 
+## One key on your main screen
+
+<p align="center">
+  <img src="docs/readme/live-key.png" alt="The live key in six states: free rings, calm dots, an amber top dot with the number 1, dots in several state colors with the number 4, a thin amber frame and a thick red frame" width="100%">
+</p>
+
+You don't have to give up a profile for VibeTribe. Drag the action **VibeTribe** between your own keys:
+
+- **Your keys stay:** installing the plugin changes nothing you see. The ready-made profile is only added on your first press.
+- **See who waits without switching:** the large top dot is the most urgent session in its state color, the number counts who waits, the other dots follow by priority.
+- **New requests catch your eye:** the top dot breathes with its session, so a glance at your own profile is enough.
+- **Problems don't hide:** a red frame means the hub has a problem, a thin amber one means stale data.
+- **The whole deck is one press away:** a press opens every session and limit; **Back** returns you to the profile you came from.
+
+The ready-made profile needs 15-key Stream Deck hardware; see [Layout and keys](#layout-and-keys).
+
 ## The tiles
 
 <p align="center">
-  <img src="docs/readme/tiles.png" alt="VibeTribe's nine session states and five overview tiles" width="100%">
+  <img src="docs/readme/tiles.png" alt="VibeTribe's nine session states and seven overview tiles, among them the live key and Back" width="100%">
 </p>
 
 Every state is **triple-coded** – color, a distinct shape and a word – so it works without color vision too. A filled symbol means *unseen*, an outline means *seen*; once you've seen a session, only a thin frame remains.
@@ -64,7 +80,7 @@ The origin is always in the bottom right: `WIN`, `WSL` or `REM`. Waiting time re
 ## Layout and keys
 
 <p align="center">
-  <img src="docs/readme/deck.png" alt="A Stream Deck MK.2 with VibeTribe keys, labelled: inbox, limits, status, working and idle sessions, sessions that need you, and finished ones" width="100%">
+  <img src="docs/readme/deck.png" alt="A Stream Deck MK.2 with the ready-made profile, labelled: Back, inbox, limits, status, sessions that need you, and calm sessions" width="100%">
 </p>
 
 VibeTribe ships seven actions (category "VibeTribe"). Two ways to use them:

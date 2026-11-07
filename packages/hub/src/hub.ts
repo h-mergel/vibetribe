@@ -253,6 +253,7 @@ export class Hub {
       limits: {
         fiveHour: this.#limits.window("five_hour", now),
         sevenDay: this.#limits.window("seven_day", now),
+        noWindow: this.#limits.noWindow(now),
         extra: this.#limits.extra(now),
         auth: this.#limits.auth,
       },

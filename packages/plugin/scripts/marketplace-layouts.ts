@@ -87,21 +87,20 @@ export function deckGallerySvg(deck: Raster): string {
   <text x="${stemX}" y="${labelY}" font-size="36" font-weight="bold" fill="${TEXT}" text-anchor="middle">${label}</text>`;
 
   const belowY = quad(0, 2).bl[1] + 18;
-  const needsLeft = quad(0, 2).bl[0];
-  const needsRight = quad(2, 2).br[0];
-  const doneLeft = quad(3, 2).bl[0];
-  const doneRight = quad(4, 2).br[0];
+  const calmLeft = quad(0, 2).bl[0];
+  const calmRight = quad(4, 2).br[0];
   const aboveY = quad(1, 0).tl[1] - 18;
-  const limitsLeft = quad(1, 0).tl[0];
-  const limitsRight = quad(3, 0).tr[0];
+  const inboxLeft = quad(1, 0).tl[0];
+  const inboxRight = quad(1, 0).tr[0];
+  const limitsLeft = quad(2, 0).tl[0];
+  const limitsRight = quad(4, 0).tr[0];
 
   return canvas(`
   ${deviceImage(deck, place)}
-  ${side(0, 0, "Inbox")}
-  ${side(4, 0, "Status")}
-  ${side(0, 1, "Working")}
-  ${side(4, 1, "Idle")}
-  ${bracket([limitsLeft, aboveY], [limitsRight, aboveY], -12, limitsLeft + 26, 72, "Limits")}
-  ${bracket([needsLeft, belowY], [needsRight, belowY], 12, (needsLeft + needsRight) / 2, 920, "Needs you")}
-  ${bracket([doneLeft, belowY], [doneRight, belowY], 12, (doneLeft + doneRight) / 2, 920, "Done")}`);
+  ${side(0, 0, "Back")}
+  ${side(0, 1, "Status")}
+  ${side(4, 1, "Needs you")}
+  ${bracket([inboxLeft, aboveY], [inboxRight, aboveY], -12, inboxLeft + 26, 72, "Inbox")}
+  ${bracket([limitsLeft, aboveY], [limitsRight, aboveY], -12, limitsRight - 60, 72, "Limits")}
+  ${bracket([calmLeft, belowY], [calmRight, belowY], 12, (calmLeft + calmRight) / 2, 920, "Calm")}`);
 }

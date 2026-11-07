@@ -1,4 +1,4 @@
-import type { AuthState, ExtraView, SessionView, WindowView } from "@vibetribe/core";
+import type { AuthState, ExtraView, SessionView, WindowId, WindowView } from "@vibetribe/core";
 
 export type Health = "ok" | "stale" | "missing";
 
@@ -24,6 +24,7 @@ export interface HubState {
   limits: {
     fiveHour: WindowView | null;
     sevenDay: WindowView | null;
+    noWindow: WindowId[];
     extra: ExtraView | null;
     auth: AuthState;
   };

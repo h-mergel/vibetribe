@@ -153,6 +153,7 @@ export const CORE_SAMPLES: [string, Tile][] = [
     ),
   ],
   ["core-limit-expired", limitTile("5h", null, "expired", NOW, TZ)],
+  ["core-limit-no-window", limitTile("Week", null, "ok", NOW, TZ, true)],
   [
     "core-extra",
     extraTile(

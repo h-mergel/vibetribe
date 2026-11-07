@@ -37,7 +37,7 @@ All commands run from the repo root, in the Linux environment that holds the rep
 | `pnpm --filter @vibetribe/reporter build` | Bundles the reporter to `packages/reporter/dist/reporter.mjs` (one file, `node:` imports only) |
 | `pnpm hub:build` | Bundles the hub to `packages/hub/dist/hub.mjs` |
 | `pnpm plugin:build` | Bundles the plugin to `packages/plugin/dev.h2k.vibetribe.sdPlugin/bin/plugin.js` and generates the bundled profile `profiles/VibeTribe.streamDeckProfile` (git-ignored, `scripts/bundled-profile.ts`) |
-| `pnpm plugin:pack` | Builds, runs `streamdeck validate`, packs to `dist/dev.h2k.vibetribe.streamDeckPlugin` and writes Maker Console media to `dist/marketplace/`. The thumbnail and `gallery-1-deck` need the official MK.2 image (`VIBETRIBE_DEVICE_IMAGE`, default `assets-local/mk2-front.png`); without it the command still packs and names what it skipped |
+| `pnpm plugin:pack` | Builds, runs `streamdeck validate`, packs to `dist/dev.h2k.vibetribe.streamDeckPlugin` and writes Maker Console media to `dist/marketplace/`; with DejaVu Sans installed it also refreshes `docs/readme/setup.png`. The thumbnail and `gallery-1-deck` need the official MK.2 image (`VIBETRIBE_DEVICE_IMAGE`, default `assets-local/mk2-front.png`); without it the command still packs and names what it skipped |
 
 ## On the real machine (consent)
 

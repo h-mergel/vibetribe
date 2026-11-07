@@ -38,7 +38,7 @@ Stand: main `deb4529`. Quelle der Wahrheit ist der Code; Abweichungen der Doku s
 - Start über `rundll32` mit streng geprüftem Link; Plugin sieht nicht, ob Desktop wirklich nach vorne kommt.
 
 **Limits**
-- 5h- und Wochen-Kachel: Verbrauch in %, Balken, Tempo-Markierung („amber ahead“), Reset-Zeit (`3d 4h`), Notizen `Sign in`, `No data`, `New window`, `As of HH:MM` (Daten > 15 min alt). Kurz drücken lädt neu (höchstens alle 120 s); bei `Sign in` öffnet es stattdessen die Anleitung (`README#sign-in`). Abfrage alle 5 min, Backoff bis 30 min.
+- 5h- und Wochen-Kachel: Verbrauch in %, Balken, Tempo-Markierung („amber ahead“), Reset-Zeit (`3d 4h`), Notizen `Sign in`, `No data`, `No window` (der Endpunkt meldet kein Fenster), `New window`, `As of HH:MM` (Daten > 15 min alt). Kurz drücken lädt neu (höchstens alle 120 s); bei `Sign in` öffnet es stattdessen die Anleitung (`README#sign-in`). Abfrage alle 5 min, Backoff bis 30 min.
 - Extra-Usage-Kachel: verbrauchter Betrag und Anteil am Monatslimit; ohne Limit `No limit`. Inaktiv mit Grund: `No credit` (out_of_credits), `Limit hit` (Ausgabenlimit erreicht), `Disabled` (vom Nutzer abgeschaltet), `Inactive` (sonst); Vorrang in dieser Reihenfolge: Disabled > Limit hit > No credit. Daten > 10 min alt: `As of HH:MM`.
 - Extra-Taste (kurz): öffnet `https://claude.ai/settings/usage` im Browser, bei `Sign in` die Anleitung; lang: nichts.
 

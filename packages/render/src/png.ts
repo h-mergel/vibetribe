@@ -10,7 +10,8 @@ const DEJAVU = [
   "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
   "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
 ];
-const FONT = DEJAVU.every((f) => existsSync(f))
+export const HAS_DEJAVU = DEJAVU.every((f) => existsSync(f));
+const FONT = HAS_DEJAVU
   ? { fontFiles: DEJAVU, loadSystemFonts: false, defaultFontFamily: "DejaVu Sans" }
   : { loadSystemFonts: true, defaultFontFamily: "DejaVu Sans" };
 

@@ -8,7 +8,12 @@ import {
   type UsagePorts,
 } from "../src/usage/poller";
 import { REFRESH_ARGS, TokenRefresher } from "../src/usage/refresh";
-import type { Credentials, UsageResult } from "../src/usage/usage";
+import {
+  type Credentials,
+  mapUsageResponse,
+  parseUsageCache,
+  type UsageResult,
+} from "../src/usage/usage";
 
 const HOUR = 3_600_000;
 const okInput = { fiveHour: { usedPct: 20, resetsAt: 9 * HOUR }, sevenDay: null, extra: null };
@@ -45,6 +50,34 @@ const fakeRefresher = (ok: boolean) => {
   };
   return r as unknown as TokenRefresher & { requests: number };
 };
+
+describe("UsagePoller and a reply without a five_hour window", () => {
+  const reply = { five_hour: null, seven_day: { utilization: 10, resets_at: null } };
+
+  it("shows the same state live and after a restart from the saved reply", async () => {
+    const live = new Hub();
+    let saved = "";
+    const first = ports({
+      results: [{ kind: "ok", input: mapUsageResponse(reply) }],
+      saveCache: async (input, at) => {
+        saved = JSON.stringify({ input, at });
+      },
+    });
+    await new UsagePoller({ hub: live, ports: first.p, refresher: fakeRefresher(false) }).poll(
+      HOUR,
+    );
+    expect(live.state(HOUR).limits.noWindow).toEqual(["five_hour"]);
+
+    const restarted = new Hub();
+    const second = ports({ loadCache: async () => parseUsageCache(saved) });
+    await new UsagePoller({
+      hub: restarted,
+      ports: second.p,
+      refresher: fakeRefresher(false),
+    }).start();
+    expect(restarted.state(HOUR).limits.noWindow).toEqual(["five_hour"]);
+  });
+});
 
 describe("TokenRefresher", () => {
   /** A refresher whose CLI run moves expiresAt to `movesTo` (null: leaves it). */

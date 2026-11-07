@@ -79,14 +79,24 @@ export function checkUsage(result: UsageResult): CheckResult {
   if (result.kind !== "ok") return failure("usage", result);
   const { fiveHour, sevenDay, extra } = result.input;
   const missing = [
-    fiveHour ? null : "five_hour",
-    sevenDay ? null : "seven_day",
+    fiveHour === undefined ? "five_hour" : null,
+    sevenDay === undefined ? "seven_day" : null,
     extra ? null : "extra_usage",
   ].filter((m) => m !== null);
   if (missing.length > 0) return changed("usage", `${missing.join(", ")} missing or reshaped`);
   if (extra?.inactive === "other")
     return changed("usage", "extra_usage is off for a reason the tile does not know");
-  return ok("usage", `five_hour, seven_day, extra_usage ${extra?.enabled ? "on" : "off"}`);
+  const absent = [fiveHour ? null : "five_hour", sevenDay ? null : "seven_day"].filter(
+    (m) => m !== null,
+  );
+  const noWindow = absent.length > 0 ? `; no window: ${absent.join(", ")}` : "";
+  const present = [fiveHour ? "five_hour" : null, sevenDay ? "seven_day" : null].filter(
+    (m) => m !== null,
+  );
+  return ok(
+    "usage",
+    `${[...present, "extra_usage"].join(", ")} ${extra?.enabled ? "on" : "off"}${noWindow}`,
+  );
 }
 
 /**

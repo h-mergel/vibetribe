@@ -196,9 +196,23 @@ export function tileFor(
         clockStepS: ctx.clockStepS ?? 1,
       });
     case "limit5h":
-      return limitTile("5h", limits.fiveHour, limits.auth, ctx.now, ctx.timeZone);
+      return limitTile(
+        "5h",
+        limits.fiveHour,
+        limits.auth,
+        ctx.now,
+        ctx.timeZone,
+        limits.noWindow.includes("five_hour"),
+      );
     case "limitWeek":
-      return limitTile("Week", limits.sevenDay, limits.auth, ctx.now, ctx.timeZone);
+      return limitTile(
+        "Week",
+        limits.sevenDay,
+        limits.auth,
+        ctx.now,
+        ctx.timeZone,
+        limits.noWindow.includes("seven_day"),
+      );
     case "extra":
       return extraTile(limits.extra, limits.auth, ctx.timeZone);
     case "status":

@@ -17,6 +17,13 @@ describe("parseUsageCache", () => {
     expect(parseUsageCache(JSON.stringify({ input, at: 7 }))).toEqual({ input, at: 7 });
   });
 
+  it("tells a window saved as null from one the saved reply said nothing about", () => {
+    const text = JSON.stringify({ input: { fiveHour: null, extra: null }, at: 7 });
+    const input = parseUsageCache(text)?.input;
+    expect(input?.fiveHour).toBeNull();
+    expect(input?.sevenDay).toBeUndefined();
+  });
+
   it("drops unknown keys and rebuilds from whitelisted fields", () => {
     const text = JSON.stringify({
       input: {
@@ -145,10 +152,22 @@ describe("mapUsageResponse (probe K shape)", () => {
   it("tolerates missing parts", () => {
     expect(mapUsageResponse({ five_hour: null })).toEqual({
       fiveHour: null,
-      sevenDay: null,
+      sevenDay: undefined,
       extra: null,
     });
-    expect(mapUsageResponse("nope")).toEqual({ fiveHour: null, sevenDay: null, extra: null });
+    expect(mapUsageResponse("nope")).toEqual({
+      fiveHour: undefined,
+      sevenDay: undefined,
+      extra: null,
+    });
+  });
+
+  it.each([
+    ["a string", "nope"],
+    ["no utilization", { resets_at: null }],
+    ["a null utilization", { utilization: null, resets_at: null }],
+  ])("does not read a reshaped window (%s) as no window", (_name, five_hour) => {
+    expect(mapUsageResponse({ five_hour }).fiveHour).toBeUndefined();
   });
 
   it("maps an invalid resets_at to null", () => {
@@ -368,7 +387,7 @@ describe("fetchUsage", () => {
     );
     expect(await fetchUsage("tok", "2.1.287", impl)).toEqual({
       kind: "ok",
-      input: { fiveHour: { usedPct: 5, resetsAt: null }, sevenDay: null, extra: null },
+      input: { fiveHour: { usedPct: 5, resetsAt: null }, extra: null },
     });
     expect(calls).toHaveLength(1);
     const { url, init } = calls[0] as Call;
@@ -433,10 +452,27 @@ describe("fetchUsage", () => {
     expect(await fetchUsage("tok", "1", respond(200, body).impl)).toEqual({
       kind: "ok",
       input: {
-        fiveHour: null,
-        sevenDay: null,
         extra: { enabled: true, usedCredits: 1, monthlyLimit: 50, currency: "EUR" },
       },
+    });
+  });
+
+  it("accepts a 200 that reports no five_hour window", async () => {
+    const body = JSON.stringify({
+      five_hour: null,
+      seven_day: { utilization: 86, resets_at: null },
+    });
+    expect(await fetchUsage("tok", "1", respond(200, body).impl)).toEqual({
+      kind: "ok",
+      input: { fiveHour: null, sevenDay: { usedPct: 86, resetsAt: null }, extra: null },
+    });
+  });
+
+  it("accepts a 200 that reports neither window", async () => {
+    const body = JSON.stringify({ five_hour: null, seven_day: null, extra_usage: null });
+    expect(await fetchUsage("tok", "1", respond(200, body).impl)).toEqual({
+      kind: "ok",
+      input: { fiveHour: null, sevenDay: null, extra: null },
     });
   });
 
@@ -444,7 +480,7 @@ describe("fetchUsage", () => {
     const body = JSON.stringify({ seven_day: { utilization: 86, resets_at: null } });
     expect(await fetchUsage("tok", "1", respond(200, body).impl)).toEqual({
       kind: "ok",
-      input: { fiveHour: null, sevenDay: { usedPct: 86, resetsAt: null }, extra: null },
+      input: { sevenDay: { usedPct: 86, resetsAt: null }, extra: null },
     });
   });
 

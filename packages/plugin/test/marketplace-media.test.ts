@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +11,7 @@ import {
   deviceImagePath,
   galleryPng,
   setupSvg,
+  updateReadmeSetup,
   writeMedia,
 } from "../scripts/marketplace-media";
 
@@ -62,6 +63,27 @@ describe("marketplace media", () => {
     expect(written).toEqual(["gallery-2-tiles.png", "gallery-3-setup.png", "icon.png"]);
     expect(readdirSync(join(out, "media")).sort()).toEqual([...written].sort());
   }, 30_000);
+
+  it("the README's setup picture is the setup image the media step just wrote", () => {
+    const repoDir = mkdtempSync(join(tmpdir(), "vt-readme-"));
+    const out = mkdtempSync(join(tmpdir(), "vt-media-"));
+    mkdirSync(join(repoDir, "docs", "readme"), { recursive: true });
+    writeFileSync(join(repoDir, "docs", "readme", "setup.png"), "old");
+    writeFileSync(join(out, "gallery-3-setup.png"), "new");
+    const path = updateReadmeSetup(repoDir, out, true);
+    expect(path).toBe(join(repoDir, "docs", "readme", "setup.png"));
+    expect(readFileSync(join(repoDir, "docs", "readme", "setup.png"), "utf8")).toBe("new");
+  });
+
+  it("leaves the README's setup picture alone without the fonts it was drawn with", () => {
+    const repoDir = mkdtempSync(join(tmpdir(), "vt-readme-"));
+    const out = mkdtempSync(join(tmpdir(), "vt-media-"));
+    mkdirSync(join(repoDir, "docs", "readme"), { recursive: true });
+    writeFileSync(join(repoDir, "docs", "readme", "setup.png"), "old");
+    writeFileSync(join(out, "gallery-3-setup.png"), "new");
+    expect(updateReadmeSetup(repoDir, out, false)).toBeNull();
+    expect(readFileSync(join(repoDir, "docs", "readme", "setup.png"), "utf8")).toBe("old");
+  });
 
   it("takes the device image from the environment, else from assets-local", () => {
     expect(deviceImagePath("/repo", { VIBETRIBE_DEVICE_IMAGE: "/x/shot.png" })).toBe("/x/shot.png");

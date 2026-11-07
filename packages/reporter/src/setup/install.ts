@@ -63,8 +63,12 @@ function randomHex(): string {
  */
 export function readSettings(path: string): Settings | null {
   if (!existsSync(path)) return null;
-  let text = readFileSync(path, "utf8");
-  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+  return parseSettings(readFileSync(path, "utf8"), path);
+}
+
+/** `path` only names the file in the error. */
+export function parseSettings(raw: string, path: string): Settings {
+  const text = raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw;
   if (text === "") return {};
   let parsed: unknown;
   try {

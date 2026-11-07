@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   type ProcessOutcome,
   reasonOf,
   WSL_SETUP_SCRIPT,
+  wslHookState,
   wslSetup,
   wslSetupArgs,
   wslSetupResult,
@@ -10,7 +11,66 @@ import {
 
 const REPORTER = "C:\\Users\\Jane Doe\\.vibetribe\\reporter.mjs";
 
+describe("wslHookState", () => {
+  const SOURCE = "reporter source";
+  const SETTINGS = "\\\\wsl.localhost\\Ubuntu\\root\\.claude\\settings.json";
+  const COPY = "\\\\wsl.localhost\\Ubuntu\\root\\.vibetribe\\reporter.mjs";
+  const failure = (code: string) => Object.assign(new Error(code), { code });
+
+  it("is unknown without a home, which also means the distro is stopped", async () => {
+    const read = vi.fn(async () => "");
+    expect(await wslHookState("Ubuntu", async () => null, SOURCE, read)).toBeNull();
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it("judges both files under the home as Windows reaches it, with every node counted as present", async () => {
+    const files: Record<string, string> = { [SETTINGS]: "settings text", [COPY]: "copy text" };
+    const judged: unknown[] = [];
+    const state = await wslHookState(
+      "Ubuntu",
+      async () => "/root",
+      SOURCE,
+      async (path) => files[path] ?? "",
+      (settings, copy, source, exists) => {
+        judged.push(settings, copy, source, exists("/any/symlinked/node"));
+        return "outdated";
+      },
+    );
+    expect(state).toBe("outdated");
+    expect(judged).toEqual(["settings text", "copy text", SOURCE, true]);
+  });
+
+  it("files that do not exist mean not set up", async () => {
+    const read = async () => {
+      throw failure("ENOENT");
+    };
+    expect(await wslHookState("Ubuntu", async () => "/root", SOURCE, read)).toBe("missing");
+  });
+
+  it.each(["settings", "copy"])(
+    "any other failure reading the %s is unknown, not missing",
+    async (which) => {
+      const read = async (path: string) => {
+        if (path === (which === "settings" ? SETTINGS : COPY)) throw failure("EACCES");
+        return "{}";
+      };
+      expect(await wslHookState("Ubuntu", async () => "/root", SOURCE, read)).toBeNull();
+    },
+  );
+});
+
 describe("wslSetupArgs", () => {
+  it("runs as the configured user, so setup and the shown state talk about the same home", () => {
+    expect(wslSetupArgs("Debian", REPORTER, "install", "forced").slice(0, 6)).toEqual([
+      "-d",
+      "Debian",
+      "-u",
+      "forced",
+      "--cd",
+      "~",
+    ]);
+  });
+
   it("runs the script in the home of the given distribution with the reporter path in forward slashes", () => {
     expect(wslSetupArgs("Debian", REPORTER, "install")).toEqual([
       "-d",

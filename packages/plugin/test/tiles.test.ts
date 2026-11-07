@@ -200,6 +200,7 @@ describe("tileFor", () => {
           rolledOver: false,
         },
         sevenDay: null,
+        noWindow: [],
         extra: {
           enabled: true,
           usedCredits: 12.4,
@@ -251,6 +252,31 @@ describe("tileFor", () => {
     });
   });
 
+  it("each limit tile shows No window only for its own absent window", () => {
+    const state = hubState({
+      limits: {
+        fiveHour: null,
+        sevenDay: null,
+        noWindow: ["five_hour"],
+        extra: null,
+        auth: "ok",
+      },
+    });
+    expect(tileFor(key("limit5h"), -1, state, ctx())).toMatchObject({ note: "No window" });
+    expect(tileFor(key("limitWeek"), -1, state, ctx())).toMatchObject({ note: "No data" });
+    const week = hubState({
+      limits: {
+        fiveHour: null,
+        sevenDay: null,
+        noWindow: ["seven_day"],
+        extra: null,
+        auth: "ok",
+      },
+    });
+    expect(tileFor(key("limitWeek"), -1, week, ctx())).toMatchObject({ note: "No window" });
+    expect(tileFor(key("limit5h"), -1, week, ctx())).toMatchObject({ note: "No data" });
+  });
+
   it("with an expired login the limit tiles show the Sign in note", () => {
     const expired = hubState({
       limits: {
@@ -266,6 +292,7 @@ describe("tileFor", () => {
           rolledOver: false,
         },
         sevenDay: null,
+        noWindow: [],
         extra: null,
         auth: "expired",
       },
@@ -297,6 +324,7 @@ describe("tileFor", () => {
           rolledOver: false,
         },
         sevenDay: null,
+        noWindow: [],
         extra: null,
         auth: "ok",
       },

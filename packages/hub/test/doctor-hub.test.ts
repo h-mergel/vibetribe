@@ -49,7 +49,7 @@ const state = (o: Partial<HubState> = {}): HubState => ({
   now: 0,
   sessions: [view({})],
   pins: [A],
-  limits: { fiveHour: null, sevenDay: null, extra: null, auth: "ok" },
+  limits: { fiveHour: null, sevenDay: null, noWindow: [], extra: null, auth: "ok" },
   sources: {
     ingress: { health: "ok", lastAt: 1, error: null },
     "sessions:win": { health: "ok", lastAt: 1, error: null },

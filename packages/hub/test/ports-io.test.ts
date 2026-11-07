@@ -3,8 +3,8 @@ import {
   credentialPaths,
   isProcessAlive,
   windowsCreationTimes,
+  wslHome,
   wslReadStat,
-  wslUser,
 } from "../src/sessions/ports";
 
 const errno = (code: string) => Object.assign(new Error(code), { code });
@@ -67,36 +67,71 @@ describe("wslReadStat (injected read)", () => {
   });
 });
 
-describe("wslUser never boots the distro", () => {
+describe("wslHome never boots the distro", () => {
   it("returns null without exec when the distro is stopped, even with an override", async () => {
-    const exec = vi.fn(async () => "h2k\n");
-    const user = wslUser("Ubuntu", async () => false, {
+    const exec = vi.fn(async () => "/home/h2k\n");
+    const home = wslHome("Ubuntu", async () => false, {
       env: { VIBETRIBE_WSL_USER: "forced" },
       exec,
     });
-    expect(await user()).toBeNull();
+    expect(await home()).toBeNull();
     expect(exec).not.toHaveBeenCalled();
   });
 
-  it("returns the override while running, without exec", async () => {
-    const exec = vi.fn(async () => "x");
-    const user = wslUser("Ubuntu", async () => true, {
+  it("asks for the home of the override user", async () => {
+    const exec = vi.fn(async (_file: string, _args: string[]) => "/srv/forced\n");
+    const home = wslHome("Ubuntu", async () => true, {
       env: { VIBETRIBE_WSL_USER: "forced" },
       exec,
     });
-    expect(await user()).toBe("forced");
-    expect(exec).not.toHaveBeenCalled();
+    expect(await home()).toBe("/srv/forced");
+    expect(exec).toHaveBeenCalledWith("wsl.exe", [
+      "-d",
+      "Ubuntu",
+      "-u",
+      "forced",
+      "-e",
+      "printenv",
+      "HOME",
+    ]);
   });
 
-  it("returns null for a cached user once the distro stops", async () => {
+  it("returns null for a cached home once the distro stops", async () => {
     let running = true;
-    const exec = vi.fn(async () => "h2k\n");
-    const user = wslUser("Ubuntu", async () => running, { env: {}, exec });
-    expect(await user()).toBe("h2k");
-    expect(await user()).toBe("h2k");
+    const exec = vi.fn(async () => "/home/h2k\n");
+    const home = wslHome("Ubuntu", async () => running, { env: {}, exec });
+    expect(await home()).toBe("/home/h2k");
+    expect(await home()).toBe("/home/h2k");
     expect(exec).toHaveBeenCalledTimes(1);
     running = false;
-    expect(await user()).toBeNull();
+    expect(await home()).toBeNull();
+    expect(exec).toHaveBeenCalledTimes(1);
+  });
+
+  it("looks up again after the distro stopped: the default user may have changed", async () => {
+    let running = true;
+    const answers = ["/home/old\n", "/home/new\n"];
+    const exec = vi.fn(async () => answers.shift() ?? "");
+    const home = wslHome("Ubuntu", async () => running, { env: {}, exec });
+    expect(await home()).toBe("/home/old");
+    running = false;
+    await home();
+    running = true;
+    expect(await home()).toBe("/home/new");
+  });
+
+  it("a failed lookup does not hold back the first lookup after a restart", async () => {
+    let running = true;
+    const exec = vi
+      .fn<() => Promise<string>>()
+      .mockRejectedValueOnce(new Error("booting"))
+      .mockResolvedValue("/home/h\n");
+    const home = wslHome("Ubuntu", async () => running, { env: {}, exec, now: () => 1_000 });
+    expect(await home()).toBeNull();
+    running = false;
+    await home();
+    running = true;
+    expect(await home()).toBe("/home/h");
   });
 
   it("backs off 60 s after a failed lookup", async () => {
@@ -104,59 +139,67 @@ describe("wslUser never boots the distro", () => {
     const exec = vi.fn(async () => {
       throw new Error("fail");
     });
-    const user = wslUser("Ubuntu", async () => true, { env: {}, exec, now: () => t });
-    expect(await user()).toBeNull();
+    const home = wslHome("Ubuntu", async () => true, { env: {}, exec, now: () => t });
+    expect(await home()).toBeNull();
     t += 59_000;
-    expect(await user()).toBeNull();
+    expect(await home()).toBeNull();
     expect(exec).toHaveBeenCalledTimes(1);
     t += 2_000;
-    expect(await user()).toBeNull();
+    expect(await home()).toBeNull();
     expect(exec).toHaveBeenCalledTimes(2);
   });
 
-  it("runs wsl.exe -d <distro> whoami asynchronously", async () => {
+  it("asks wsl.exe for HOME without a shell", async () => {
     const calls: [string, string[]][] = [];
-    const user = wslUser("Ubuntu", async () => true, {
+    const home = wslHome("Ubuntu", async () => true, {
       env: {},
       exec: async (f, a) => {
         calls.push([f, a]);
-        return "h2k\r\n";
+        return "/root\r\n";
       },
     });
-    expect(await user()).toBe("h2k");
-    expect(calls).toEqual([["wsl.exe", ["-d", "Ubuntu", "whoami"]]]);
+    expect(await home()).toBe("/root");
+    expect(calls).toEqual([["wsl.exe", ["-d", "Ubuntu", "-e", "printenv", "HOME"]]]);
   });
+
+  it.each(["", "not/absolute", "C:\\Users\\x", "/home/../etc"])(
+    "treats the unusable HOME %j as unknown",
+    async (value) => {
+      const home = wslHome("Ubuntu", async () => true, { env: {}, exec: async () => value });
+      expect(await home()).toBeNull();
+    },
+  );
 });
 
 describe("credentialPaths", () => {
   const home = "C:\\Users\\H";
   const winPath = "C:\\Users\\H\\.claude\\.credentials.json";
-  const wsl = (running: boolean, user: () => Promise<string | null>) => ({
+  const wsl = (running: boolean, wslHomeDir: () => Promise<string | null>) => ({
     distro: "Ubuntu",
     isRunning: async () => running,
-    user,
+    home: wslHomeDir,
   });
 
   it("returns only the Windows path without WSL", async () => {
     expect(await credentialPaths(home, null)).toEqual([winPath]);
   });
 
-  it("returns only the Windows path while WSL is not running and never asks for the user", async () => {
-    const user = vi.fn(async () => "h2k");
-    expect(await credentialPaths(home, wsl(false, user))).toEqual([winPath]);
-    expect(user).not.toHaveBeenCalled();
+  it("returns only the Windows path while WSL is not running and never asks for the home", async () => {
+    const lookup = vi.fn(async () => "/home/h2k");
+    expect(await credentialPaths(home, wsl(false, lookup))).toEqual([winPath]);
+    expect(lookup).not.toHaveBeenCalled();
   });
 
-  it("adds the WSL path when running and the user is known", async () => {
+  it("adds the WSL path when running and the home is known", async () => {
     expect(
       await credentialPaths(
         home,
-        wsl(true, async () => "h2k"),
+        wsl(true, async () => "/home/h2k"),
       ),
     ).toEqual([winPath, "\\\\wsl.localhost\\Ubuntu\\home\\h2k\\.claude\\.credentials.json"]);
   });
 
-  it("returns only the Windows path when running but the user is unknown", async () => {
+  it("returns only the Windows path when running but the home is unknown", async () => {
     expect(
       await credentialPaths(
         home,

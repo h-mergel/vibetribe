@@ -561,7 +561,7 @@ describe("Deck clock and defaults", () => {
       rolledOver: false,
     };
     const state = hubState({
-      limits: { fiveHour: five, sevenDay: null, extra: null, auth: "ok" },
+      limits: { fiveHour: five, sevenDay: null, noWindow: [], extra: null, auth: "ok" },
     });
     const text = (timeZone: string) => {
       const sent = new Map<string, string>();
@@ -614,7 +614,14 @@ describe("Deck reservations and press edge cases", () => {
       const { d } = deck();
       d.update(
         hubState({
-          limits: { fiveHour: null, sevenDay: null, extra: null, auth: "expired", ...over },
+          limits: {
+            fiveHour: null,
+            sevenDay: null,
+            noWindow: [],
+            extra: null,
+            auth: "expired",
+            ...over,
+          },
         }),
         [],
         T0,

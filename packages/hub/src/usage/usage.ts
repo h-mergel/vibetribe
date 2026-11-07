@@ -37,10 +37,12 @@ export function pickCredentials(texts: string[]): Credentials | null {
   return best;
 }
 
-function windowOf(v: unknown): WindowInput | null {
-  if (!isObj(v)) return null;
+/** null: the reply says there is no such window. undefined: missing or reshaped, so nothing is known. */
+function windowOf(v: unknown): WindowInput | null | undefined {
+  if (v === null) return null;
+  if (!isObj(v)) return undefined;
   const pct = num(v.utilization);
-  if (pct === null) return null;
+  if (pct === null) return undefined;
   const resets = typeof v.resets_at === "string" ? Date.parse(v.resets_at) : Number.NaN;
   return { usedPct: pct, resetsAt: Number.isFinite(resets) ? resets : null };
 }
@@ -88,7 +90,7 @@ export interface UsageCache {
   at: number;
 }
 
-/** Rebuilds a window from whitelisted fields. Absent or null means null; undefined means invalid. */
+/** Rebuilds a window from whitelisted fields. Null or absent gives null (the caller drops absent keys); undefined means invalid. */
 function cacheWindow(v: unknown): WindowInput | null | undefined {
   if (v === undefined || v === null) return null;
   if (!isObj(v) || !isFiniteNumber(v.usedPct)) return undefined;
@@ -133,7 +135,14 @@ export function parseUsageCache(text: string): UsageCache | null {
   const sevenDay = cacheWindow(raw.input.sevenDay);
   const extra = cacheExtra(raw.input.extra);
   if (fiveHour === undefined || sevenDay === undefined || extra === undefined) return null;
-  return { input: { fiveHour, sevenDay, extra }, at: raw.at };
+  return {
+    input: {
+      ...(raw.input.fiveHour === undefined ? {} : { fiveHour }),
+      ...(raw.input.sevenDay === undefined ? {} : { sevenDay }),
+      extra,
+    },
+    at: raw.at,
+  };
 }
 
 export type UsageResult = { kind: "ok"; input: EndpointInput } | OAuthFailure;
@@ -146,7 +155,7 @@ export async function fetchUsage(
   const res = await getOAuthJson(USAGE_URL, token, version, {}, fetchImpl);
   if (res.kind !== "ok") return res;
   const input = mapUsageResponse(res.json);
-  if (input.fiveHour === null && input.sevenDay === null && input.extra === null) {
+  if (input.fiveHour === undefined && input.sevenDay === undefined && input.extra === null) {
     return { kind: "error", message: UNEXPECTED_RESPONSE };
   }
   return { kind: "ok", input };

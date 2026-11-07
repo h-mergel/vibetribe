@@ -132,6 +132,13 @@ describe("checkUsage", () => {
     );
   });
 
+  it("accepts a window reported as null and names it", () => {
+    const reply = { ...usage(), five_hour: null };
+    expect(checkUsage({ kind: "ok", input: mapUsageResponse(reply) })).toEqual(
+      ok("usage", "seven_day, extra_usage on; no window: five_hour"),
+    );
+  });
+
   it("names the parts that are gone and an unknown reason for extra usage being off", () => {
     const { seven_day: _, ...withoutWeek } = usage();
     expect(checkUsage({ kind: "ok", input: mapUsageResponse(withoutWeek) })).toEqual(

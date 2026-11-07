@@ -21,7 +21,13 @@ export * from "./remote/poller";
 export * from "./runtime";
 export * from "./scenario";
 export * from "./sessions/parse";
-export { isProcessAlive, nodeDirPort, windowsCreationTimes } from "./sessions/ports";
+export {
+  isProcessAlive,
+  nodeDirPort,
+  windowsCreationTimes,
+  wslHome,
+  wslIsRunning,
+} from "./sessions/ports";
 export * from "./sessions/sources";
 export * from "./state";
 export { pickClaudeExe, refreshEnv } from "./usage/cli";

@@ -34,7 +34,7 @@ export function hubState(over: Partial<HubState> = {}): HubState {
     now: 0,
     sessions: [],
     pins: [],
-    limits: { fiveHour: null, sevenDay: null, extra: null, auth: "ok" },
+    limits: { fiveHour: null, sevenDay: null, noWindow: [], extra: null, auth: "ok" },
     sources: {},
     recent: [],
     invalidEnvelopes: 0,

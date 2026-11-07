@@ -9,6 +9,8 @@ export type SetupView = {
   windows: SetupState;
   /** WSL's distribution; null hides the WSL part (no WSL, or not found yet) */
   wsl: string | null;
+  /** the hooks there; null: not known, for example while the distribution is stopped */
+  wslState: SetupState | null;
   busy: boolean;
   message: SetupResult | null;
 };
@@ -40,6 +42,8 @@ export interface SetupControllerDeps {
   findDistro: () => Promise<string | null>;
   /** called once, when WSL's distribution is found: the hub starts reading it */
   wslFound: (distro: string) => void;
+  /** must not boot a stopped distribution */
+  wslState: (distro: string) => Promise<SetupState | null>;
   wsl: (distro: string, mode: WslMode) => Promise<SetupResult>;
   /** to the open property inspector; must not throw */
   publish: (view: SetupView) => void;
@@ -60,6 +64,8 @@ export class SetupController {
   readonly #d: SetupControllerDeps;
   #state: SetupState = "missing";
   #distro: string | null = null;
+  #wslState: SetupState | null = null;
+  #wslReads = 0;
   #finding = false;
   #busy = false;
   #message: SetupResult | null = null;
@@ -81,6 +87,7 @@ export class SetupController {
     else this.#d.hub.markError(SETUP_SOURCE, error);
     this.#publish();
     if (this.#distro === null) void this.#findWsl();
+    else void this.#readWslState(this.#distro);
   }
 
   async handle(payload: unknown): Promise<void> {
@@ -114,12 +121,27 @@ export class SetupController {
         this.#distro = distro;
         this.#d.wslFound(distro);
         this.#publish();
+        void this.#readWslState(distro);
       }
     } catch (err) {
       this.#d.log(`wsl lookup failed: ${String(err)}`);
     } finally {
       this.#finding = false;
     }
+  }
+
+  /** Only the newest read counts: an older answer can arrive after it. */
+  async #readWslState(distro: string): Promise<void> {
+    const read = ++this.#wslReads;
+    let state: SetupState | null = null;
+    try {
+      state = await this.#d.wslState(distro);
+    } catch (err) {
+      this.#d.log(`wsl setup state not read: ${String(err)}`);
+    }
+    if (read !== this.#wslReads) return;
+    this.#wslState = state;
+    this.#publish();
   }
 
   async #run(request: Exclude<SetupRequest, "refresh">): Promise<SetupResult> {
@@ -142,6 +164,7 @@ export class SetupController {
     this.#d.publish({
       windows: this.#state,
       wsl: this.#distro,
+      wslState: this.#wslState,
       busy: this.#busy,
       message: this.#message,
     });

@@ -1,4 +1,12 @@
 import { execFile } from "node:child_process";
+import { readFile } from "node:fs/promises";
+import { isGone, wslUnc } from "@vibetribe/hub";
+import {
+  reporterCopyPath,
+  type SetupState,
+  settingsPath,
+  stateOfFiles,
+} from "@vibetribe/reporter/setup";
 import type { SetupResult } from "./windows";
 
 export type WslMode = "install" | "remove";
@@ -28,9 +36,27 @@ export const WSL_SETUP_SCRIPT =
 
 const TIMEOUT_MS = 60_000;
 
-export function wslSetupArgs(distro: string, reporterPath: string, mode: WslMode): string[] {
+export function wslSetupArgs(
+  distro: string,
+  reporterPath: string,
+  mode: WslMode,
+  user?: string,
+): string[] {
   const reporter = reporterPath.replaceAll("\\", "/");
-  return ["-d", distro, "--cd", "~", "-e", "sh", "-lc", WSL_SETUP_SCRIPT, "sh", reporter, mode];
+  return [
+    "-d",
+    distro,
+    ...(user ? ["-u", user] : []),
+    "--cd",
+    "~",
+    "-e",
+    "sh",
+    "-lc",
+    WSL_SETUP_SCRIPT,
+    "sh",
+    reporter,
+    mode,
+  ];
 }
 
 /**
@@ -77,17 +103,50 @@ export function wslSetupResult(distro: string, mode: WslMode, out: ProcessOutcom
   }
 }
 
+/**
+ * The hooks in WSL as Windows sees them; null while that is not known: the home is unknown
+ * (`wslHome` answers null for a stopped distribution, so this never boots it) or a file cannot be
+ * read. Reads are asynchronous because a stalled share must not freeze the hub. Links do not resolve
+ * reliably over the share, so a hook's node counts as present: a vanished node shows only as a hook
+ * that stops reporting.
+ */
+export async function wslHookState(
+  distro: string,
+  home: () => Promise<string | null>,
+  reporterSource: string,
+  read: (path: string) => Promise<string> = (path) => readFile(path, "utf8"),
+  judge: typeof stateOfFiles = stateOfFiles,
+): Promise<SetupState | null> {
+  const dir = await home();
+  if (dir === null) return null;
+  const orNull = (path: string): Promise<string | null> =>
+    read(wslUnc(distro, path)).catch((err) => {
+      if (isGone(err)) return null;
+      throw err;
+    });
+  try {
+    const [settings, copy] = await Promise.all([
+      orNull(settingsPath(dir)),
+      orNull(reporterCopyPath(dir)),
+    ]);
+    return judge(settings, copy, reporterSource, () => true);
+  } catch {
+    return null;
+  }
+}
+
 /** Boots the distribution if it is stopped, which is why it only ever runs on the user's click. */
 export async function wslSetup(
   distro: string,
   reporterPath: string,
   mode: WslMode,
   run: RunProcess,
+  user?: string,
 ): Promise<SetupResult> {
   return wslSetupResult(
     distro,
     mode,
-    await run("wsl.exe", wslSetupArgs(distro, reporterPath, mode)),
+    await run("wsl.exe", wslSetupArgs(distro, reporterPath, mode, user)),
   );
 }
 

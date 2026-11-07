@@ -114,7 +114,7 @@ describe("WslSessionSource", () => {
         [`${dir}\\999.json`]: sessionJson(999, "dead", "1"),
       }),
       isRunning: async () => true,
-      user: async () => "h2k",
+      home: async () => "/home/h2k",
       listProc: async () => ["1", "713", "497651", "self", "cpuinfo"],
       readStat: async (pid) => {
         statCalls.push(pid);
@@ -124,24 +124,34 @@ describe("WslSessionSource", () => {
     };
   }
 
-  it("returns null without touching files or resolving the user when the distro is not running", async () => {
-    let userCalls = 0;
+  it("returns null without touching files or resolving the home when the distro is not running", async () => {
+    let homeCalls = 0;
     const p = ports({
       isRunning: async () => false,
-      user: async () => {
-        userCalls++;
-        return "h2k";
+      home: async () => {
+        homeCalls++;
+        return "/home/h2k";
       },
     });
     expect(await new WslSessionSource(p).scan(1)).toEqual({ inactive: "distro not running" });
     expect((p.fs as ReturnType<typeof fakeFs>).reads).toEqual([]);
-    expect(userCalls).toBe(0);
+    expect(homeCalls).toBe(0);
   });
 
-  it("reports an unknown user as the inactive reason", async () => {
-    expect(await new WslSessionSource(ports({ user: async () => null })).scan(1)).toEqual({
-      inactive: "WSL user unknown",
+  it("reports an unknown home as the inactive reason", async () => {
+    expect(await new WslSessionSource(ports({ home: async () => null })).scan(1)).toEqual({
+      inactive: "WSL home unknown",
     });
+  });
+
+  it("reads the sessions under a home outside /home", async () => {
+    const rootDir = "\\\\wsl.localhost\\Ubuntu\\root\\.claude\\sessions";
+    const p = ports({
+      home: async () => "/root",
+      fs: fakeFs({ [`${rootDir}\\497651.json`]: sessionJson(497651, "live", "921344") }),
+    });
+    const snapshot = await new WslSessionSource(p).scan(1);
+    expect(snapshot).toMatchObject({ sessions: [{ pid: 497651 }] });
   });
 
   it("keeps sessions whose /proc start time equals procStart and only probes live pids", async () => {
@@ -386,7 +396,7 @@ describe("WslSessionSource carry-forward", () => {
       distro: "Ubuntu",
       fs: fakeFs({ [`${dir}\\497651.json`]: sessionJson(497651, "live", "921344") }),
       isRunning: async () => true,
-      user: async () => "h2k",
+      home: async () => "/home/h2k",
       listProc: async () => ["497651"],
       readStat: async () => stat("921344"),
       ...over,

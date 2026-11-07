@@ -78,6 +78,78 @@ describe("LimitsStore windows", () => {
   });
 });
 
+describe("LimitsStore windows the endpoint reports as absent", () => {
+  const STALE = 15 * 60_000;
+  const reading = { usedPct: 40, resetsAt: 4 * H };
+
+  it("knows nothing about a window before any report", () => {
+    expect(new LimitsStore().noWindow(0)).toEqual([]);
+  });
+
+  it("marks a window reported as null, per window", () => {
+    const s = new LimitsStore();
+    s.ingestEndpoint({ fiveHour: null, sevenDay: reading }, 0);
+    expect(s.noWindow(0)).toEqual(["five_hour"]);
+    expect(s.window("five_hour", 0)).toBeNull();
+    expect(s.window("seven_day", 0)?.usedPct).toBe(40);
+  });
+
+  it("does not mark a window the reply says nothing about", () => {
+    const s = new LimitsStore();
+    s.ingestEndpoint({}, 0);
+    expect(s.noWindow(0)).toEqual([]);
+  });
+
+  it("keeps a reading that is not stale yet, so one null does not blank the tile", () => {
+    const s = new LimitsStore();
+    s.ingestStatusline({ fiveHour: reading }, 0);
+    s.ingestEndpoint({ fiveHour: null }, STALE);
+    expect(s.noWindow(STALE)).toEqual([]);
+    expect(s.window("five_hour", STALE)?.usedPct).toBe(40);
+  });
+
+  it("drops a stale reading", () => {
+    const s = new LimitsStore();
+    s.ingestEndpoint({ fiveHour: reading }, 0);
+    s.ingestEndpoint({ fiveHour: null }, STALE + 1);
+    expect(s.noWindow(STALE + 1)).toEqual(["five_hour"]);
+    expect(s.window("five_hour", STALE + 1)).toBeNull();
+  });
+
+  it("does not let an old cached null displace a newer reading", () => {
+    const s = new LimitsStore();
+    s.ingestStatusline({ fiveHour: { usedPct: 40, resetsAt: 12 * H } }, 10 * H);
+    s.ingestEndpoint({ fiveHour: null }, 0);
+    expect(s.noWindow(10 * H)).toEqual([]);
+    expect(s.window("five_hour", 10 * H)?.usedPct).toBe(40);
+  });
+
+  it.each([
+    ["endpoint", (s: LimitsStore) => s.ingestEndpoint({ fiveHour: reading }, 1)],
+    ["statusline", (s: LimitsStore) => s.ingestStatusline({ fiveHour: reading }, 1)],
+  ])("clears the mark with the next %s reading", (_source, ingest) => {
+    const s = new LimitsStore();
+    s.ingestEndpoint({ fiveHour: null }, 0);
+    ingest(s);
+    expect(s.noWindow(1)).toEqual([]);
+    expect(s.window("five_hour", 1)?.usedPct).toBe(40);
+  });
+
+  it("stops claiming no window once the report is stale", () => {
+    const s = new LimitsStore();
+    s.ingestEndpoint({ fiveHour: null }, 0);
+    expect(s.noWindow(STALE)).toEqual(["five_hour"]);
+    expect(s.noWindow(STALE + 1)).toEqual([]);
+  });
+
+  it("a later reply that says nothing about the window clears the mark", () => {
+    const s = new LimitsStore();
+    s.ingestEndpoint({ fiveHour: null }, 0);
+    s.ingestEndpoint({ sevenDay: reading }, 1);
+    expect(s.noWindow(1)).toEqual([]);
+  });
+});
+
 describe("LimitsStore extra usage and auth", () => {
   it("keeps extra usage and marks it stale after 10 minutes", () => {
     const s = new LimitsStore();

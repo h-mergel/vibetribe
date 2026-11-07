@@ -42,12 +42,17 @@ export interface WindowsSourcePorts {
   creationTimes(pids: number[]): Promise<Map<number, number>>;
 }
 
+/** An absolute Linux path as Windows reaches it. Touching the result boots a stopped distro. */
+export function wslUnc(distro: string, linuxPath: string): string {
+  return `\\\\wsl.localhost\\${distro}${linuxPath.replaceAll("/", "\\")}`;
+}
+
 export interface WslSourcePorts {
   distro: string;
   fs: DirPort;
   isRunning(): Promise<boolean>;
-  /** Linux user owning ~/.claude; only called while the distro runs */
-  user(): Promise<string | null>;
+  /** Linux home holding .claude; only called while the distro runs */
+  home(): Promise<string | null>;
   /** Entries of /proc (one readdir); throws when the distro is unreachable */
   listProc(): Promise<string[]>;
   /** /proc/<pid>/stat, null when the process is gone; throws on other errors */
@@ -199,18 +204,18 @@ export class WslSessionSource implements SessionSource {
   async scan(now: number): Promise<HostSnapshot | InactiveScan> {
     // never touch \\wsl.localhost while the distro is stopped: that would start it
     if (!(await this.#p.isRunning())) return { inactive: "distro not running" };
-    const user = await this.#p.user();
-    if (!user) return { inactive: "WSL user unknown" };
+    const home = await this.#p.home();
+    if (!home) return { inactive: "WSL home unknown" };
     try {
-      return await this.#scanRunning(user, now);
+      return await this.#scanRunning(home, now);
     } catch (err) {
       // distro went away mid-scan (or is unreadable): inactive for this round, keep the sessions we know
       return { inactive: describeError(err) };
     }
   }
 
-  async #scanRunning(user: string, now: number): Promise<HostSnapshot> {
-    const dir = `\\\\wsl.localhost\\${this.#p.distro}\\home\\${user}\\.claude\\sessions`;
+  async #scanRunning(home: string, now: number): Promise<HostSnapshot> {
+    const dir = wslUnc(this.#p.distro, `${home}/.claude/sessions`);
     const alive = new Set(await this.#p.listProc());
     const candidates = pidsOf(await this.#p.fs.list(dir)).filter((pid) => alive.has(String(pid)));
     const starts = new Map<number, string>();

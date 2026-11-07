@@ -187,6 +187,20 @@ describe("limitTile", () => {
       ).note,
     ).toBe("New window");
   });
+
+  it("says No window, not stale, when the endpoint reports none", () => {
+    expect(limitTile("5h", null, "ok", 0, TZ, true)).toMatchObject({
+      label: "5h",
+      usedPct: null,
+      resetIn: null,
+      stale: false,
+      note: "No window",
+    });
+  });
+
+  it("an expired login wins over No window", () => {
+    expect(limitTile("5h", null, "expired", 0, TZ, true).note).toBe("Sign in");
+  });
 });
 
 describe("extraTile", () => {

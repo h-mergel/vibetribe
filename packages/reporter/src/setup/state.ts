@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { vibetribeDir } from "../config";
-import { readSettings, settingsPath } from "./install";
+import { parseSettings, settingsPath } from "./install";
 import { ourHookCommands } from "./settings";
 
 /**
@@ -17,19 +17,37 @@ export function setupState(
   reporterSource: string,
   exists: (path: string) => boolean = existsSync,
 ): SetupState {
+  let settings: string | null;
+  try {
+    const path = settingsPath(home);
+    settings = existsSync(path) ? readFileSync(path, "utf8") : null;
+  } catch {
+    return "missing";
+  }
+  let copy: string | null;
+  try {
+    copy = readFileSync(reporterCopyPath(home), "utf8");
+  } catch {
+    copy = null;
+  }
+  return stateOfFiles(settings, copy, reporterSource, exists);
+}
+
+export const reporterCopyPath = (home: string): string => join(vibetribeDir(home), "reporter.mjs");
+
+/** The state from the two files' contents, for callers that read them another way; null: no file. */
+export function stateOfFiles(
+  settings: string | null,
+  copy: string | null,
+  reporterSource: string,
+  exists: (path: string) => boolean,
+): SetupState {
   let commands: string[] | null;
   try {
-    const settings = readSettings(settingsPath(home));
-    commands = settings ? ourHookCommands(settings) : null;
+    commands = settings === null ? null : ourHookCommands(parseSettings(settings, "settings"));
   } catch {
     return "missing";
   }
   if (!commands) return "missing";
-  let copy: string | null;
-  try {
-    copy = readFileSync(join(vibetribeDir(home), "reporter.mjs"), "utf8");
-  } catch {
-    copy = null;
-  }
   return copy === reporterSource && commands.every((c) => exists(c)) ? "installed" : "outdated";
 }

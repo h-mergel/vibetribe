@@ -73,7 +73,7 @@ export interface LimitTile {
   level?: LimitLevel;
   ahead?: boolean;
   stale?: boolean;
-  /** Replaces the reset line: "As of 14:32", "Sign in", "No data", "New window". */
+  /** Replaces the reset line: "As of 14:32", "Sign in", "No data", "No window", "New window". */
   note?: string | null;
 }
 

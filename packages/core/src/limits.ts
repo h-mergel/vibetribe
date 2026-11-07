@@ -23,6 +23,7 @@ export interface ExtraInput {
 }
 
 export interface EndpointInput {
+  /** For both windows: null means the endpoint reports no such window; undefined, that it says nothing. */
   fiveHour?: WindowInput | null;
   sevenDay?: WindowInput | null;
   extra?: ExtraInput | null;
@@ -74,6 +75,8 @@ export function levelOf(pct: number): LimitLevel {
 
 export class LimitsStore {
   readonly #windows = new Map<WindowId, Reading>();
+  /** When the endpoint last reported each absent window; never a window that has a reading. */
+  readonly #noWindow = new Map<WindowId, number>();
   #extra: (ExtraInput & { receivedAt: number }) | null = null;
   #auth: AuthState = "ok";
 
@@ -87,8 +90,8 @@ export class LimitsStore {
 
   ingestEndpoint(input: EndpointInput, at: number): void {
     this.#auth = "ok";
-    if (input.fiveHour) this.#put("five_hour", input.fiveHour, at);
-    if (input.sevenDay) this.#put("seven_day", input.sevenDay, at);
+    this.#ingestEndpointWindow("five_hour", input.fiveHour, at);
+    this.#ingestEndpointWindow("seven_day", input.sevenDay, at);
     if (input.extra) this.#extra = { ...input.extra, receivedAt: at };
   }
 
@@ -119,9 +122,30 @@ export class LimitsStore {
     };
   }
 
+  /** The windows the endpoint reported as absent; a stale report no longer counts. */
+  noWindow(now: number): WindowId[] {
+    return [...this.#noWindow].filter(([, at]) => now - at <= WINDOW_STALE_MS).map(([id]) => id);
+  }
+
   extra(now: number): ExtraView | null {
     if (!this.#extra) return null;
     return { ...this.#extra, stale: now - this.#extra.receivedAt > EXTRA_STALE_MS };
+  }
+
+  /** A null only replaces a stale reading: a fresh one may come from a statusline that still reports it. */
+  #ingestEndpointWindow(id: WindowId, input: WindowInput | null | undefined, at: number): void {
+    if (input) {
+      this.#put(id, input, at);
+      return;
+    }
+    if (input === undefined) {
+      this.#noWindow.delete(id);
+      return;
+    }
+    const old = this.#windows.get(id);
+    if (old && at - old.receivedAt <= WINDOW_STALE_MS) return;
+    this.#windows.delete(id);
+    this.#noWindow.set(id, at);
   }
 
   #ingestStatuslineWindow(id: WindowId, input: WindowInput | undefined, at: number): void {
@@ -137,6 +161,7 @@ export class LimitsStore {
   #put(id: WindowId, input: WindowInput, at: number, rolledOver = false): void {
     const old = this.#windows.get(id);
     if (old && old.receivedAt > at) return;
+    this.#noWindow.delete(id);
     this.#windows.set(id, { ...input, receivedAt: at, rolledOver });
   }
 }

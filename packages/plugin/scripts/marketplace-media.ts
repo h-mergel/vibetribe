@@ -1,8 +1,8 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { Resvg } from "@resvg/resvg-js";
-import { svgToPng } from "@vibetribe/render/png";
+import { HAS_DEJAVU, svgToPng } from "@vibetribe/render/png";
 import { composeDeck } from "./marketplace-deck";
 import {
   BACKGROUND,
@@ -141,10 +141,24 @@ export function writeMedia(repo: string, out: string, deviceImage: string): Medi
   };
 }
 
+/**
+ * The README shows the same setup drawing as the listing. Without DejaVu Sans the drawing comes out
+ * in other fonts or without text, so the tracked picture stays as it is; null means skipped.
+ */
+export function updateReadmeSetup(repo: string, out: string, fonts = HAS_DEJAVU): string | null {
+  if (!fonts) return null;
+  const target = join(repo, "docs", "readme", "setup.png");
+  copyFileSync(join(out, SETUP_IMAGE), target);
+  return target;
+}
+
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const repo = process.cwd();
   const out = resolve(process.argv[2] ?? "dist/marketplace");
   const { written, skipped } = writeMedia(repo, out, deviceImagePath(repo, process.env));
   for (const name of written) process.stdout.write(`${join(out, name)}\n`);
+  process.stdout.write(
+    `${updateReadmeSetup(repo, out) ?? "skipped docs/readme/setup.png: no DejaVu Sans"}\n`,
+  );
   if (skipped) process.stdout.write(`skipped ${skipped.names.join(", ")}: ${skipped.reason}\n`);
 }

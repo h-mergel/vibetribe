@@ -60,6 +60,7 @@
     </section>
     <section id="wsl" hidden>
       <strong id="wslName">WSL</strong>
+      <p id="wslState"></p>
       <p>Adds the same hooks to ~/.claude/settings.json inside WSL (with a backup); starts the distribution if it is stopped. Needs Node.js 20 or later there. Set up Windows first.</p>
       <button type="button" id="installWsl">Set up in WSL</button>
       <button type="button" id="removeWsl">Remove from WSL</button>
@@ -80,6 +81,11 @@
             "Not set up. Setup adds VibeTribe's hooks and a statusline passthrough to ~/.claude/settings.json (with a backup) and copies Stream Deck's Node.js (about 90 MB) to .vibetribe in your user folder to run them.",
           outdated: "Set up, but they need an update. Setup may copy Stream Deck's Node.js again (about 90 MB).",
           installed: "Set up on Windows.",
+        };
+        const WSL_STATES = {
+          missing: "Not set up in WSL.",
+          outdated: "Set up in WSL, but they need an update.",
+          installed: "Set up in WSL.",
         };
         const $ = (id) => document.getElementById(id);
         const info = JSON.parse(actionInfo);
@@ -107,6 +113,10 @@
           $("remove").hidden = view.windows === "missing";
           $("wsl").hidden = view.wsl === null;
           $("wslName").textContent = `WSL (${view.wsl})`;
+          $("wslState").textContent = WSL_STATES[view.wslState] ?? "State not known. WSL may be stopped.";
+          $("installWsl").hidden = view.wslState === "installed";
+          $("installWsl").textContent = view.wslState === "outdated" ? "Update in WSL" : "Set up in WSL";
+          $("removeWsl").hidden = view.wslState === "missing";
           for (const id of ["install", "remove", "removeWsl"]) $(id).disabled = view.busy;
           $("installWsl").disabled = view.busy || view.windows !== "installed";
           $("message").textContent = view.busy ? "Working…" : (view.message?.text ?? "");

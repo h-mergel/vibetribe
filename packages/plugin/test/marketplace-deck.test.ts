@@ -128,6 +128,28 @@ describe("composeDeck", () => {
     expect(DECK_TILES).toHaveLength(15);
   });
 
+  it("shows the keys of the ready-made profile and every session state", () => {
+    expect(DECK_TILES.slice(0, 6).map((t) => t.kind)).toEqual([
+      "back",
+      "inbox",
+      "limit",
+      "limit",
+      "extra",
+      "status",
+    ]);
+    expect(DECK_TILES.slice(6).map((t) => (t.kind === "slot" ? t.state : t.kind))).toEqual([
+      "needs_permission",
+      "needs_input",
+      "error",
+      "done_unseen",
+      "throttled",
+      "working",
+      "background",
+      "idle",
+      "no_signal",
+    ]);
+  });
+
   it("puts tile pixels on all 15 keys, each spot shows the tile and not the device", () => {
     for (let row = 0; row < 3; row++)
       for (let column = 0; column < 5; column++) {

@@ -9,7 +9,13 @@ import type { WslMode } from "../src/setup/wsl";
 const settle = () => new Promise((resolve) => setImmediate(resolve));
 
 /** `distros`: what each lookup of WSL answers, in turn (the last one repeats). */
-function controller(o: { state?: SetupState; distros?: (string | null)[] } = {}) {
+function controller(
+  o: {
+    state?: SetupState;
+    distros?: (string | null)[];
+    wslState?: () => Promise<SetupState | null>;
+  } = {},
+) {
   let state: SetupState = o.state ?? "missing";
   let unreadable = false;
   const distros = o.distros ?? ["Debian"];
@@ -17,6 +23,7 @@ function controller(o: { state?: SetupState; distros?: (string | null)[] } = {})
   const views: SetupView[] = [];
   const calls: string[] = [];
   const found: string[] = [];
+  const logs: string[] = [];
   const hub = new Hub();
   let releaseWsl: (r: SetupResult) => void = () => {};
   const c = new SetupController({
@@ -38,6 +45,7 @@ function controller(o: { state?: SetupState; distros?: (string | null)[] } = {})
     },
     findDistro: async () => distros[Math.min(lookups++, distros.length - 1)] ?? null,
     wslFound: (distro) => found.push(distro),
+    wslState: o.wslState ?? (async () => null),
     wsl: (distro: string, mode: WslMode) => {
       calls.push(`wsl ${distro} ${mode}`);
       return new Promise((resolve) => {
@@ -47,10 +55,11 @@ function controller(o: { state?: SetupState; distros?: (string | null)[] } = {})
     publish: (v) => views.push(v),
     hub,
     now: () => 5,
-    log: () => {},
+    log: (line) => logs.push(line),
   });
   return {
     c,
+    logs,
     views,
     calls,
     found,
@@ -78,9 +87,21 @@ describe("SetupController", () => {
     const { c, views, hub, found } = controller();
     c.refresh();
     expect(hub.state(5).sources[SETUP_SOURCE]?.error).toBe("Claude Code hooks not set up");
-    expect(views.at(-1)).toEqual({ windows: "missing", wsl: null, busy: false, message: null });
+    expect(views.at(-1)).toEqual({
+      windows: "missing",
+      wsl: null,
+      wslState: null,
+      busy: false,
+      message: null,
+    });
     await settle();
-    expect(views.at(-1)).toEqual({ windows: "missing", wsl: "Debian", busy: false, message: null });
+    expect(views.at(-1)).toEqual({
+      windows: "missing",
+      wsl: "Debian",
+      wslState: null,
+      busy: false,
+      message: null,
+    });
     expect(found).toEqual(["Debian"]);
   });
 
@@ -99,6 +120,70 @@ describe("SetupController", () => {
     expect(lookups()).toBe(2);
   });
 
+  it("shows the WSL state once WSL is found and on every later refresh", async () => {
+    let wslState: SetupState | null = "missing";
+    const { c, views } = controller({ wslState: async () => wslState });
+    c.refresh();
+    await settle();
+    expect(views.at(-1)?.wslState).toBe("missing");
+    wslState = "installed";
+    c.refresh();
+    await settle();
+    expect(views.at(-1)?.wslState).toBe("installed");
+    wslState = null;
+    c.refresh();
+    await settle();
+    expect(views.at(-1)?.wslState).toBeNull();
+  });
+
+  it("never reads a WSL state before WSL is found", async () => {
+    let reads = 0;
+    const { c } = controller({
+      distros: [null],
+      wslState: async () => {
+        reads++;
+        return "installed";
+      },
+    });
+    c.refresh();
+    await settle();
+    expect(reads).toBe(0);
+  });
+
+  it("a failed read of the WSL state drops the old state and is logged", async () => {
+    let fail = false;
+    const { c, views, logs } = controller({
+      wslState: async () => {
+        if (fail) throw new Error("EIO");
+        return "installed";
+      },
+    });
+    c.refresh();
+    await settle();
+    expect(views.at(-1)?.wslState).toBe("installed");
+    fail = true;
+    c.refresh();
+    await settle();
+    expect(views.at(-1)?.wslState).toBeNull();
+    expect(logs.join()).toContain("EIO");
+  });
+
+  it("an answer that arrives after a newer refresh does not overwrite it", async () => {
+    const answers: ((s: SetupState | null) => void)[] = [];
+    const { c, views } = controller({
+      wslState: () => new Promise((resolve) => answers.push(resolve)),
+    });
+    c.refresh();
+    await settle();
+    c.refresh();
+    expect(answers).toHaveLength(2);
+    answers[1]?.("installed");
+    await settle();
+    answers[0]?.("missing");
+    await settle();
+    expect(views.at(-1)?.wslState).toBe("installed");
+  });
+
   it("calls outdated hooks an update and clears the mark once installed", async () => {
     const { c, hub } = controller({ state: "outdated" });
     c.refresh();
@@ -115,6 +200,7 @@ describe("SetupController", () => {
     expect(views.at(-1)).toEqual({
       windows: "installed",
       wsl: "Debian",
+      wslState: null,
       busy: false,
       message: { ok: true, text: "installed" },
     });

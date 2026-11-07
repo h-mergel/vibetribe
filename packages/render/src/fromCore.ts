@@ -164,8 +164,10 @@ export function limitTile(
   auth: AuthState,
   now: number,
   timeZone?: string,
+  noWindow = false,
 ): LimitTile {
   if (!w) {
+    const known = noWindow && auth !== "expired";
     return {
       kind: "limit",
       label,
@@ -174,8 +176,8 @@ export function limitTile(
       resetIn: null,
       level: "neutral",
       ahead: false,
-      stale: true,
-      note: auth === "expired" ? "Sign in" : "No data",
+      stale: !known,
+      note: known ? "No window" : auth === "expired" ? "Sign in" : "No data",
     };
   }
   let note: string | null = null;

@@ -7,6 +7,8 @@ import {
   isProcessAlive,
   windowsHubConfig,
   wslDistro,
+  wslHome,
+  wslIsRunning,
 } from "@vibetribe/hub";
 import { ensureToken } from "@vibetribe/reporter/setup";
 import { registerActions } from "./actions";
@@ -17,7 +19,7 @@ import { createSdkSurface } from "./sdk/surface";
 import { followPreferPinned } from "./settings";
 import { SetupController } from "./setup/controller";
 import { windowsSetup } from "./setup/windows";
-import { runProcess, wslSetup } from "./setup/wsl";
+import { runProcess, wslHookState, wslSetup } from "./setup/wsl";
 
 declare const __REPORTER_SOURCE__: string;
 
@@ -73,6 +75,7 @@ try {
   });
   const running = app;
   const reporterPath = join(home, ".vibetribe", "reporter.mjs");
+  let wslHomeLookup: ReturnType<typeof wslHome> | null = null;
   const setup = new SetupController({
     windows: windowsSetup({
       home,
@@ -87,7 +90,13 @@ try {
       log(`wsl: ${distro}`);
       running.hub.addSource(wslSource(distro));
     },
-    wsl: (distro, mode) => wslSetup(distro, reporterPath, mode, runProcess),
+    wslState: (distro) => {
+      // no cache on the running check: a setup click may just have started the distribution
+      wslHomeLookup ??= wslHome(distro, wslIsRunning(distro, 0));
+      return wslHookState(distro, wslHomeLookup, __REPORTER_SOURCE__);
+    },
+    wsl: (distro, mode) =>
+      wslSetup(distro, reporterPath, mode, runProcess, process.env.VIBETRIBE_WSL_USER),
     publish: (view) =>
       void streamDeck.ui
         .sendToPropertyInspector(view)
